@@ -1,0 +1,2996 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ball Shooter Game</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Press+Start+2P&display=swap');
+        
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background: #000;
+            font-family: 'Orbitron', sans-serif;
+        }
+        
+        canvas { 
+            display: block; 
+        }
+        
+        #menu {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, #000000 0%, #1a1a2e 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            color: white;
+        }
+        
+        #title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 72px;
+            margin-bottom: 40px;
+            text-shadow: 0 0 10px #b43b90, 0 0 20px #0088ff;
+            animation: pulse 2s infinite;
+        }
+        
+        .menu-btn {
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid #a12aa1;
+            color: white;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 24px;
+            padding: 15px 30px;
+            margin: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-radius: 5px;
+            width: 300px;
+            text-align: center;
+        }
+        
+        .menu-btn:hover {
+            background: rgba(0, 255, 255, 0.2);
+            transform: scale(1.05);
+            box-shadow: 0 0 15px #00ffff;
+        }
+        
+        #instructions {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 14px;
+            background: rgba(0,0,0,0.7);
+            padding: 15px;
+            border-radius: 5px;
+            max-width: 300px;
+            display: none;
+            border: 1px solid #00ffff;
+        }
+        
+        #map-selector {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #00ffff;
+            z-index: 101;
+        }
+        
+        .map-option {
+            width: 200px;
+            height: 150px;
+            margin: 10px;
+            background-size: cover;
+            background-position: center;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .map-option:hover {
+            border-color: #00ffff;
+            box-shadow: 0 0 15px #00ffff;
+        }
+        
+        .map-name {
+            color: white;
+            text-align: center;
+            margin-top: 10px;
+            font-size: 16px;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    
+    <div id="menu">
+        <h1 id="title">ARENA SHOOTER ULTIMATE</h1>
+        <div class="menu-btn" id="startBtn">START GAME</div>
+        <div class="menu-btn" id="instructionsBtn">INSTRUCTIONS</div>
+        <div class="menu-btn" id="creditsBtn">CREDITS</div>
+    </div>
+    
+    <div id="instructions" style="display: none;">
+        <h2>Arena Shooter Ultimate</h2>
+        <p><strong>Movement:</strong> WASD</p>
+        <p><strong>Weapons:</strong><br>
+        Left Click - Gun (primary)<br>
+        Right Click - Sword (melee)<br>
+        Q - Shield<br>
+        E - Grenade<br>
+        R - Laser<br>
+        B - Black Hole</p>
+        <p><strong>Abilities:</strong><br>
+        SPACE - Dash<br>
+        T - Time Slow</p>
+        <p><strong>Menu:</strong><br>
+        U - Upgrades<br>
+        ESC - Pause</p>
+        <p><strong>Boss Fight Tips:</strong><br>
+        - Watch attack patterns<br>
+        - Use Time Slow strategically<br>
+        - Prioritize dodging over attacking</p>
+    </div>
+    
+    <div id="map-selector" style="display: none;">
+        <h2 style="color: #00ffff; text-align: center; margin-bottom: 20px;">SELECT MAP</h2>
+        <div style="display: flex; flex-wrap: wrap; justify-content: center;">
+            <div>
+                <div class="map-option" data-map="space" style="background-image: url('https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80')"></div>
+                <div class="map-name">Cosmic Void</div>
+            </div>
+            <div>
+                <div class="map-option" data-map="city" style="background-image: url('https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80')"></div>
+                <div class="map-name">Neon City</div>
+            </div>
+            <div>
+                <div class="map-option" data-map="lava" style="background-image: url('https://images.unsplash.com/photo-1511499767150-a48a237f0083?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80')"></div>
+                <div class="map-name">Molten Core</div>
+            </div>
+        </div>
+    </div>
+
+<script>
+// =============================================
+// GAME CONFIGURATION
+// =============================================
+const CONFIG = {
+    // Player settings
+    PLAYER: {
+        RADIUS: 20,
+        BASE_SPEED: 300, // pixels per second
+        DASH_SPEED: 800, // pixels per second
+        DASH_DURATION: 0.2, // seconds
+        DASH_COOLDOWN: 1.5, // seconds
+        HEALTH: 100,
+        ARMOR: 0,
+        COINS: 0,
+        INVULNERABILITY_DURATION: 0.5 // seconds after hit
+    },
+
+    // Weapon settings
+    WEAPONS: {
+        SHIELD: {
+            BASE_RADIUS: 30,
+            BASE_DURATION: 3, // seconds
+            BASE_COOLDOWN: 5, // seconds
+            COLOR: 'rgba(0, 200, 255, 0.3)',
+            UPGRADE_SCALING: {
+                RADIUS: 5,
+                DURATION: 0.5, // seconds
+                COOLDOWN: -0.5 // seconds
+            }
+        },
+        GUN: {
+            BASE_DAMAGE: 10,
+            BASE_FIRE_RATE: 0.1, // seconds between shots
+            BULLET_SPEED: 800, // pixels per second
+            COLOR: 'yellow',
+            UPGRADE_SCALING: {
+                DAMAGE: 5,
+                FIRE_RATE: -0.0167 // seconds
+            }
+        },
+        SWORD: {
+            BASE_DAMAGE: 0.1, // % of enemy max health
+            BASE_RADIUS: 100,
+            BASE_ANGLE: Math.PI/3, // 60 degrees
+            BASE_COOLDOWN: 1, // seconds
+            BASE_DURATION: 0.3, // seconds
+            COLOR: 'silver',
+            UPGRADE_SCALING: {
+                DAMAGE: 0.05,
+                RADIUS: 15,
+                COOLDOWN: -0.2 // seconds
+            }
+        },
+        GRENADE: {
+            BASE_DAMAGE: 40,
+            BASE_RADIUS: 80,
+            BASE_COOLDOWN: 3, // seconds
+            EXPLOSION_DURATION: 0.5, // seconds
+            COLOR: 'orange',
+            UPGRADE_SCALING: {
+                DAMAGE: 10,
+                RADIUS: 10,
+                COOLDOWN: -0.3 // seconds
+            }
+        },
+        LASER: {
+            BASE_DAMAGE: 15, // per second
+            BASE_LENGTH: 300,
+            BASE_WIDTH: 8,
+            BASE_COOLDOWN: 8, // seconds
+            BASE_DURATION: 1.5, // seconds
+            COLOR: 'rgba(255, 50, 50, 0.7)',
+            UPGRADE_SCALING: {
+                DAMAGE: 2,
+                LENGTH: 50,
+                DURATION: 0.5, // seconds
+                COOLDOWN: -0.5 // seconds
+            }
+        },
+        BLACK_HOLE: {
+            BASE_DAMAGE: 25, // per second
+            BASE_RADIUS: 100,
+            BASE_COOLDOWN: 15, // seconds
+            BASE_DURATION: 2.5, // seconds
+            COLOR: 'rgba(150, 0, 200, 0.6)',
+            UPGRADE_SCALING: {
+                DAMAGE: 5,
+                RADIUS: 15,
+                DURATION: 0.5, // seconds
+                COOLDOWN: -1 // seconds
+            }
+        }
+    },
+
+    // Time slow settings
+    TIME_SLOW: {
+        BASE_LEVEL: 0,
+        BASE_DURATION: 2, // seconds
+        BASE_COOLDOWN: 10, // seconds
+        TIME_FACTOR: 0.3, // how much to slow time (0.3 = 30% speed)
+        UPGRADE_SCALING: {
+            DURATION: 1, // seconds
+            COOLDOWN: -1 // seconds
+        }
+    },
+
+    // Enemy settings
+    ENEMIES: {
+        BASE_HEALTH: 30,
+        BASE_SIZE: 20,
+        BASE_SPEED: 100, // pixels per second
+        BASE_DAMAGE: 5,
+        ELITE_MULTIPLIER: {
+            HEALTH: 3,
+            SIZE: 1.5,
+            DAMAGE: 2,
+            SPEED: 1.2
+        },
+        WAVE_SCALING: {
+            HEALTH: 5,
+            SPEED: 10, // pixels per second
+            DAMAGE: 0.5
+        },
+        TYPES: {
+            NORMAL: {
+                COLOR: 'hsl($H, 70%, 50%)',
+                VALUE: 1
+            },
+            ELITE: {
+                COLOR: 'hsl($H, 80%, 60%)',
+                VALUE: 3
+            },
+            FAST: {
+                COLOR: 'hsl($H, 90%, 70%)',
+                SPEED: 1.8,
+                HEALTH: 0.7,
+                SIZE: 0.8,
+                VALUE: 2
+            },
+            TANK: {
+                COLOR: 'hsl($H, 60%, 40%)',
+                SPEED: 0.7,
+                HEALTH: 4,
+                SIZE: 1.8,
+                VALUE: 4
+            }
+        }
+    },
+
+    // Boss settings
+    BOSS: {
+        BASE_HEALTH: 300,
+        BASE_SIZE: 80,
+        BASE_SPEED: 200, // pixels per second
+        BASE_DAMAGE: 25,
+        WAVE_SCALING: {
+            HEALTH: 80,
+            SPEED: 10, // pixels per second
+            DAMAGE: 3
+        },
+        PHASES: [
+            { healthThreshold: 0.7, speedMultiplier: 1.3, attackRate: 1.2 },
+            { healthThreshold: 0.4, speedMultiplier: 1.6, attackRate: 1.5 }
+        ],
+        ATTACK_PATTERNS: [
+            { type: 'single', count: 1, damage: 30, speed: 300, size: 30, color: 'orange' },
+            { type: 'circle', count: 8, damage: 10, speed: 200, size: 15, color: 'yellow' },
+            { type: 'homing', count: 3, damage: 15, speed: 150, size: 20, color: 'purple' },
+            { type: 'spiral', count: 12, damage: 15, speed: 250, size: 15, color: 'cyan' }
+        ]
+    },
+
+    // Powerup settings
+    POWERUPS: {
+        HEALTH: {
+            VALUE: 25,
+            SIZE: 15,
+            LIFETIME: 5, // seconds
+            COLOR: 'rgba(0, 255, 0, 0.7)'
+        },
+        ARMOR: {
+            VALUE: 10,
+            SIZE: 15,
+            LIFETIME: 5, // seconds
+            COLOR: 'rgba(0, 0, 255, 0.7)'
+        },
+        COIN: {
+            BASE_VALUE: 10,
+            SIZE: 15,
+            LIFETIME: 5, // seconds
+            COLOR: 'rgba(255, 215, 0, 0.7)'
+        },
+        TIME: {
+            VALUE: 1,
+            SIZE: 15,
+            LIFETIME: 5, // seconds
+            COLOR: 'rgba(0, 255, 255, 0.7)'
+        },
+        RAGE: {
+            VALUE: 5, // seconds
+            SIZE: 15,
+            LIFETIME: 5, // seconds
+            COLOR: 'rgba(255, 0, 0, 0.7)'
+        }
+    },
+
+    // Game settings
+    GAME: {
+        WAVE_ENEMY_COUNT: 10,
+        WAVE_SCALING: 2,
+        MAX_ENEMIES: 15,
+        ENEMY_SPAWN_RATE: 0.01, // chance per frame
+        POWERUP_SPAWN_RATE: 0.001, // chance per frame
+        SCREEN_SHAKE_DECAY: 0.9,
+        BOSS_WAVE_INTERVAL: 5, // every 5 waves
+        PARTICLE_LIFETIME: 1 // seconds
+    },
+
+    // Controls
+    CONTROLS: {
+        MOVE_UP: 'w',
+        MOVE_LEFT: 'a',
+        MOVE_DOWN: 's',
+        MOVE_RIGHT: 'd',
+        SHIELD: 'q',
+        GRENADE: 'e',
+        LASER: 'r',
+        BLACK_HOLE: 'b',
+        DASH: ' ',
+        TIME_SLOW: 't',
+        UPGRADES: 'u',
+        PAUSE: 'escape',
+        HELP: 'h'
+    }
+};
+
+// =============================================
+// GAME STATE
+// =============================================
+const state = {
+    // Game status
+    gameStarted: false,
+    currentMap: 'space',
+    
+    // Canvas and rendering
+    canvas: document.getElementById('gameCanvas'),
+    ctx: null,
+    lastTime: 0,
+    deltaTime: 0,
+    
+    // Background
+    background: {
+        stars: [],
+        parallaxLayers: [],
+        offsetX: 0,
+        offsetY: 0
+    },
+    
+    // Player state
+    player: {
+        x: 0,
+        y: 0,
+        radius: CONFIG.PLAYER.RADIUS,
+        speed: CONFIG.PLAYER.BASE_SPEED,
+        health: CONFIG.PLAYER.HEALTH,
+        maxHealth: CONFIG.PLAYER.HEALTH,
+        armor: CONFIG.PLAYER.ARMOR,
+        coins: CONFIG.PLAYER.COINS,
+        mouseX: 0,
+        mouseY: 0,
+        dash: {
+            active: false,
+            duration: 0,
+            cooldown: 0
+        },
+        invulnerable: 0, // seconds remaining
+        keys: {},
+        mouse: {
+            left: false,
+            right: false
+        },
+        effects: []
+    },
+    
+    // Weapons
+    weapons: {
+        shield: { 
+            active: false, 
+            level: 1, 
+            radius: CONFIG.WEAPONS.SHIELD.BASE_RADIUS,
+            duration: CONFIG.WEAPONS.SHIELD.BASE_DURATION,
+            cooldown: 0, 
+            maxCooldown: CONFIG.WEAPONS.SHIELD.BASE_COOLDOWN,
+            color: CONFIG.WEAPONS.SHIELD.COLOR
+        },
+        gun: { 
+            active: false,
+            level: 1, 
+            damage: CONFIG.WEAPONS.GUN.BASE_DAMAGE,
+            cooldown: 0, 
+            fireRate: CONFIG.WEAPONS.GUN.BASE_FIRE_RATE, 
+            bullets: [],
+            color: CONFIG.WEAPONS.GUN.COLOR
+        },
+        sword: { 
+            active: false, 
+            level: 1, 
+            damagePercent: CONFIG.WEAPONS.SWORD.BASE_DAMAGE,
+            radius: CONFIG.WEAPONS.SWORD.BASE_RADIUS,
+            angle: CONFIG.WEAPONS.SWORD.BASE_ANGLE, 
+            cooldown: 0, 
+            maxCooldown: CONFIG.WEAPONS.SWORD.BASE_COOLDOWN,
+            swingDuration: CONFIG.WEAPONS.SWORD.BASE_DURATION,
+            color: CONFIG.WEAPONS.SWORD.COLOR
+        },
+        grenade: {
+            active: false,
+            level: 0,
+            damage: CONFIG.WEAPONS.GRENADE.BASE_DAMAGE,
+            radius: CONFIG.WEAPONS.GRENADE.BASE_RADIUS,
+            cooldown: 0,
+            maxCooldown: CONFIG.WEAPONS.GRENADE.BASE_COOLDOWN,
+            grenades: [],
+            color: CONFIG.WEAPONS.GRENADE.COLOR
+        },
+        laser: {
+            active: false,
+            level: 0,
+            damage: CONFIG.WEAPONS.LASER.BASE_DAMAGE,
+            length: CONFIG.WEAPONS.LASER.BASE_LENGTH,
+            width: CONFIG.WEAPONS.LASER.BASE_WIDTH,
+            cooldown: 0,
+            maxCooldown: CONFIG.WEAPONS.LASER.BASE_COOLDOWN,
+            duration: CONFIG.WEAPONS.LASER.BASE_DURATION,
+            color: CONFIG.WEAPONS.LASER.COLOR
+        },
+        blackHole: {
+            active: false,
+            level: 0,
+            damage: CONFIG.WEAPONS.BLACK_HOLE.BASE_DAMAGE,
+            radius: CONFIG.WEAPONS.BLACK_HOLE.BASE_RADIUS,
+            cooldown: 0,
+            maxCooldown: CONFIG.WEAPONS.BLACK_HOLE.BASE_COOLDOWN,
+            duration: CONFIG.WEAPONS.BLACK_HOLE.BASE_DURATION,
+            color: CONFIG.WEAPONS.BLACK_HOLE.COLOR,
+            holes: []
+        }
+    },
+    
+    // Abilities
+    timeSlow: {
+        active: false,
+        level: CONFIG.TIME_SLOW.BASE_LEVEL,
+        duration: 0,
+        cooldown: 0
+    },
+    
+    // Game entities
+    enemies: [],
+    particles: [],
+    powerups: [],
+    environmental: [],
+    
+    // Game progression
+    wave: 0,
+    enemiesInWave: 0,
+    bossActive: false,
+    boss: null,
+    gameTime: 0,
+    
+    // UI state
+    showUpgrades: false,
+    showHelp: false,
+    gamePaused: false,
+    
+    // Effects
+    screenShake: {
+        amount: 0,
+        duration: 0
+    },
+    
+    // Stats
+    stats: {
+        enemiesKilled: 0,
+        damageDealt: 0,
+        damageTaken: 0,
+        wavesCompleted: 0,
+        highestWave: 0,
+        coinsCollected: 0
+    },
+    
+    // Controls
+    controls: JSON.parse(JSON.stringify(CONFIG.CONTROLS)),
+    rebinding: null
+};
+
+// =============================================
+// GAME INITIALIZATION
+// =============================================
+function initGame() {
+    // Set up canvas
+    state.ctx = state.canvas.getContext('2d');
+    resizeCanvas();
+    
+    // Center player
+    state.player.x = state.canvas.width / 2;
+    state.player.y = state.canvas.height / 2;
+    
+    // Initialize mouse position
+    state.player.mouseX = state.player.x;
+    state.player.mouseY = state.player.y;
+    
+    // Initialize background
+    initBackground();
+    
+    // Start first wave
+    startNextWave();
+    
+    // Start game loop
+    state.lastTime = performance.now();
+    requestAnimationFrame(gameLoop);
+}
+
+function initBackground() {
+    // Create stars for space background
+    state.background.stars = [];
+    for (let i = 0; i < 200; i++) {
+        state.background.stars.push({
+            x: Math.random() * state.canvas.width,
+            y: Math.random() * state.canvas.height,
+            size: Math.random() * 2 + 1,
+            speed: Math.random() * 0.5 + 0.5,
+            color: `rgba(255, 255, 255, ${Math.random() * 0.8 + 0.2})`
+        });
+    }
+    
+    // Create parallax layers based on map
+    state.background.parallaxLayers = [];
+    
+    if (state.currentMap === 'space') {
+        // Space background with nebulas
+        for (let i = 0; i < 3; i++) {
+            state.background.parallaxLayers.push({
+                image: null,
+                x: 0,
+                y: 0,
+                speed: 0.2 + i * 0.1,
+                color: `hsl(${Math.random() * 60 + 200}, 70%, 50%)`,
+                size: Math.random() * 100 + 50
+            });
+        }
+    } else if (state.currentMap === 'city') {
+        // City skyline silhouette
+        state.background.parallaxLayers.push({
+            image: null,
+            x: 0,
+            y: state.canvas.height - 100,
+            speed: 0.3,
+            color: '#111',
+            height: 100
+        });
+        
+        // Distant buildings
+        for (let i = 0; i < 20; i++) {
+            state.background.parallaxLayers.push({
+                x: Math.random() * state.canvas.width,
+                y: state.canvas.height - (Math.random() * 50 + 50),
+                width: Math.random() * 50 + 20,
+                height: Math.random() * 50 + 50,
+                speed: 0.1,
+                color: `hsl(240, 50%, ${Math.random() * 10 + 10}%)`
+            });
+        }
+    } else if (state.currentMap === 'lava') {
+        // Lava cracks
+        for (let i = 0; i < 10; i++) {
+            state.background.parallaxLayers.push({
+                x: Math.random() * state.canvas.width,
+                y: state.canvas.height - 20,
+                width: Math.random() * 100 + 50,
+                height: 20,
+                speed: 0.2,
+                color: `hsl(${Math.random() * 20 + 10}, 100%, 50%)`
+            });
+        }
+        
+        // Rock formations
+        for (let i = 0; i < 15; i++) {
+            state.background.parallaxLayers.push({
+                x: Math.random() * state.canvas.width,
+                y: state.canvas.height - (Math.random() * 100 + 50),
+                width: Math.random() * 80 + 40,
+                height: Math.random() * 80 + 40,
+                speed: 0.1,
+                color: `hsl(0, 0%, ${Math.random() * 10 + 10}%)`
+            });
+        }
+    }
+    
+    // Create environmental hazards
+    state.environmental = [];
+    
+    if (state.currentMap === 'city') {
+        // Cars that move across screen
+        for (let i = 0; i < 3; i++) {
+            state.environmental.push({
+                type: 'car',
+                x: Math.random() * state.canvas.width,
+                y: state.canvas.height - 40,
+                width: 80,
+                height: 40,
+                speed: 100 + Math.random() * 50,
+                direction: Math.random() > 0.5 ? 1 : -1,
+                damage: 20,
+                color: `hsl(${Math.random() * 360}, 70%, 50%)`
+            });
+        }
+    } else if (state.currentMap === 'lava') {
+        // Lava bubbles that rise and pop
+        for (let i = 0; i < 5; i++) {
+            state.environmental.push({
+                type: 'lava_bubble',
+                x: Math.random() * state.canvas.width,
+                y: state.canvas.height + 20,
+                radius: 10 + Math.random() * 20,
+                speedY: -30 - Math.random() * 30,
+                speedX: (Math.random() - 0.5) * 20,
+                damage: 15,
+                lifetime: 2 + Math.random() * 3,
+                color: `hsl(${Math.random() * 20 + 10}, 100%, 50%)`
+            });
+        }
+        
+        // Falling rocks
+        for (let i = 0; i < 3; i++) {
+            state.environmental.push({
+                type: 'falling_rock',
+                x: Math.random() * state.canvas.width,
+                y: -50,
+                radius: 15 + Math.random() * 20,
+                speed: 100 + Math.random() * 50,
+                damage: 25,
+                color: `hsl(0, 0%, ${Math.random() * 20 + 20}%)`
+            });
+        }
+    }
+}
+
+function resizeCanvas() {
+    state.canvas.width = window.innerWidth;
+    state.canvas.height = window.innerHeight;
+}
+
+// =============================================
+// EVENT HANDLERS
+// =============================================
+function handleKeyDown(e) {
+    const key = e.key.toLowerCase();
+    state.player.keys[key] = true;
+    
+    // Handle pause
+    if (key === state.controls.PAUSE && state.gameStarted) {
+        state.gamePaused = !state.gamePaused;
+        return;
+    }
+    
+    // Handle help toggle
+    if (key === state.controls.HELP && state.gameStarted) {
+        state.showHelp = !state.showHelp;
+        document.getElementById('instructions').style.display = state.showHelp ? 'block' : 'none';
+        return;
+    }
+    
+    // Don't process other keys if game is paused or not started
+    if (state.gamePaused || !state.gameStarted) return;
+    
+    // Handle rebinding
+    if (state.rebinding) {
+        rebindControl(state.rebinding, key);
+        state.rebinding = null;
+        return;
+    }
+    
+    // Handle weapon toggles
+    if (!state.showUpgrades) {
+        if (key === state.controls.SHIELD && state.weapons.shield.cooldown <= 0) {
+            toggleWeapon('shield');
+        }
+        if (key === state.controls.GRENADE && state.weapons.grenade.cooldown <= 0) {
+            toggleWeapon('grenade');
+        }
+        if (key === state.controls.LASER && state.weapons.laser.cooldown <= 0) {
+            toggleWeapon('laser');
+        }
+        if (key === state.controls.BLACK_HOLE && state.weapons.blackHole.cooldown <= 0) {
+            toggleWeapon('blackHole');
+        }
+    }
+    
+    // Handle menus
+    if (key === state.controls.UPGRADES) {
+        state.showUpgrades = !state.showUpgrades;
+    }
+    
+    // Handle abilities
+    if (key === state.controls.DASH) {
+        activateDash();
+    }
+    if (key === state.controls.TIME_SLOW) {
+        activateTimeSlow();
+    }
+    
+    // Handle upgrades
+    if (state.showUpgrades) {
+        if (key >= '1' && key <= '7') {
+            const weaponMap = {
+                '1': 'shield',
+                '2': 'gun',
+                '3': 'sword',
+                '4': 'grenade',
+                '5': 'laser',
+                '6': 'blackHole',
+                '7': 'time'
+            };
+            upgradeWeapon(weaponMap[key]);
+        }
+    }
+}
+
+function handleKeyUp(e) {
+    state.player.keys[e.key.toLowerCase()] = false;
+}
+
+function handleMouseDown(e) {
+    if (e.button === 0) { // Left click
+        state.player.mouse.left = true;
+        if (state.gameStarted) {
+            state.weapons.gun.active = true;
+        }
+    } else if (e.button === 2) { // Right click
+        state.player.mouse.right = true;
+        if (state.gameStarted && state.weapons.sword.cooldown <= 0) {
+            toggleWeapon('sword');
+        }
+    }
+}
+
+function handleMouseUp(e) {
+    if (e.button === 0) { // Left click
+        state.player.mouse.left = false;
+        if (state.gameStarted) {
+            state.weapons.gun.active = false;
+        }
+    } else if (e.button === 2) { // Right click
+        state.player.mouse.right = false;
+    }
+}
+
+function handleMouseMove(e) {
+    state.player.mouseX = e.clientX;
+    state.player.mouseY = e.clientY;
+}
+
+function handleResize() {
+    resizeCanvas();
+    if (state.gameStarted) {
+        initBackground();
+    }
+}
+
+// Set up event listeners
+window.addEventListener('keydown', handleKeyDown);
+window.addEventListener('keyup', handleKeyUp);
+window.addEventListener('mousedown', handleMouseDown);
+window.addEventListener('mouseup', handleMouseUp);
+window.addEventListener('mousemove', handleMouseMove);
+window.addEventListener('resize', handleResize);
+window.addEventListener('contextmenu', (e) => e.preventDefault());
+
+// Menu event listeners
+document.getElementById('startBtn').addEventListener('click', () => {
+    document.getElementById('map-selector').style.display = 'flex';
+});
+
+document.getElementById('instructionsBtn').addEventListener('click', () => {
+    document.getElementById('instructions').style.display = 'block';
+});
+
+document.getElementById('creditsBtn').addEventListener('click', () => {
+    alert('Arena Shooter Ultimate\nCreated by [Your Name]\nInspired by classic arcade shooters');
+});
+
+// Map selection
+document.querySelectorAll('.map-option').forEach(option => {
+    option.addEventListener('click', () => {
+        state.currentMap = option.dataset.map;
+        document.getElementById('menu').style.display = 'none';
+        document.getElementById('map-selector').style.display = 'none';
+        state.gameStarted = true;
+        initGame();
+    });
+});
+
+// =============================================
+// GAME FUNCTIONS
+// =============================================
+function toggleWeapon(weapon) {
+    const w = state.weapons[weapon];
+    
+    // Don't toggle if on cooldown or not unlocked
+    if (w.cooldown > 0 || (weapon !== 'shield' && weapon !== 'gun' && weapon !== 'sword' && w.level === 0)) {
+        return;
+    }
+    
+    // For weapons that are toggled on/off
+    if (weapon === 'shield') {
+        w.active = !w.active;
+        if (w.active) {
+            w.cooldown = w.duration;
+        } else {
+            w.cooldown = w.maxCooldown;
+        }
+    } 
+    // For weapons that are activated once
+    else if (weapon === 'sword') {
+        w.active = true;
+        w.cooldown = w.maxCooldown;
+        addScreenShake(3, 0.2);
+        
+        // Sword swing effect
+        for (let i = 0; i < 20; i++) {
+            const angle = Math.atan2(state.player.mouseY - state.player.y, state.player.mouseX - state.player.x) + 
+                         (Math.random() - 0.5) * w.angle;
+            const dist = Math.random() * w.radius;
+            
+            state.particles.push({
+                x: state.player.x + Math.cos(angle) * dist,
+                y: state.player.y + Math.sin(angle) * dist,
+                dx: Math.cos(angle + Math.PI/2) * (Math.random() - 0.5) * 100,
+                dy: Math.sin(angle + Math.PI/2) * (Math.random() - 0.5) * 100,
+                size: Math.random() * 3 + 2,
+                color: 'rgba(255, 255, 255, 0.8)',
+                lifetime: 0.2 + Math.random() * 0.2
+            });
+        }
+    }
+    // For grenade launcher
+    else if (weapon === 'grenade') {
+        const angle = Math.atan2(state.player.mouseY - state.player.y, state.player.mouseX - state.player.x);
+        state.weapons.grenade.grenades.push({
+            x: state.player.x,
+            y: state.player.y,
+            dx: Math.cos(angle) * 400 * state.deltaTime,
+            dy: Math.sin(angle) * 400 * state.deltaTime,
+            damage: w.damage,
+            radius: w.radius,
+            timer: 1.5, // seconds until explosion
+            exploded: false
+        });
+        w.cooldown = w.maxCooldown;
+        addScreenShake(5, 0.1);
+    }
+    // For laser
+    else if (weapon === 'laser') {
+        w.active = true;
+        w.cooldown = w.duration;
+        addScreenShake(2, 0.3);
+    }
+    // For black hole
+    else if (weapon === 'blackHole') {
+        state.weapons.blackHole.holes.push({
+            x: state.player.mouseX,
+            y: state.player.mouseY,
+            radius: w.radius,
+            damage: w.damage,
+            timer: w.duration,
+            active: true
+        });
+        w.cooldown = w.maxCooldown;
+        addScreenShake(10, 0.5);
+    }
+}
+
+function activateDash() {
+    if (state.player.dash.cooldown <= 0) {
+        state.player.dash.active = true;
+        state.player.dash.duration = CONFIG.PLAYER.DASH_DURATION;
+        state.player.dash.cooldown = CONFIG.PLAYER.DASH_COOLDOWN;
+        addScreenShake(5, 0.2);
+        
+        // Dash trail effect
+        for (let i = 0; i < 10; i++) {
+            state.particles.push({
+                x: state.player.x,
+                y: state.player.y,
+                dx: (Math.random() - 0.5) * 50,
+                dy: (Math.random() - 0.5) * 50,
+                size: Math.random() * 3 + 2,
+                color: 'rgba(255, 255, 255, 0.8)',
+                lifetime: 0.3 + Math.random() * 0.2
+            });
+        }
+    }
+}
+
+function activateTimeSlow() {
+    if (state.timeSlow.cooldown <= 0 && state.timeSlow.level > 0) {
+        state.timeSlow.active = true;
+        state.timeSlow.duration = CONFIG.TIME_SLOW.BASE_DURATION + (state.timeSlow.level * CONFIG.TIME_SLOW.UPGRADE_SCALING.DURATION);
+        state.timeSlow.cooldown = CONFIG.TIME_SLOW.BASE_COOLDOWN + (state.timeSlow.level * CONFIG.TIME_SLOW.UPGRADE_SCALING.COOLDOWN);
+        addScreenShake(3, 0.5);
+        
+        // Time slow visual effect
+        state.player.effects.push({
+            type: 'timeSlow',
+            duration: 0.5,
+            timer: 0.5
+        });
+    }
+}
+
+function addScreenShake(amount, duration) {
+    state.screenShake.amount = Math.max(state.screenShake.amount, amount);
+    state.screenShake.duration = Math.max(state.screenShake.duration, duration);
+}
+
+function startNextWave() {
+    state.wave++;
+    state.enemiesInWave = 0;
+    state.stats.wavesCompleted++;
+    state.stats.highestWave = Math.max(state.stats.highestWave, state.wave);
+    
+    // Every 5 waves, spawn a boss
+    if (state.wave % CONFIG.GAME.BOSS_WAVE_INTERVAL === 0) {
+        spawnBoss();
+    }
+    
+    // Wave start effect
+    addScreenShake(3, 0.3);
+    state.player.effects.push({
+        type: 'waveStart',
+        duration: 1,
+        timer: 1
+    });
+}
+
+function spawnEnemy() {
+    let x, y;
+    if (Math.random() < 0.5) {
+        x = Math.random() < 0.5 ? -50 : state.canvas.width + 50;
+        y = Math.random() * state.canvas.height;
+    } else {
+        x = Math.random() * state.canvas.width;
+        y = Math.random() < 0.5 ? -50 : state.canvas.height + 50;
+    }
+    
+    // Determine enemy type
+    let type = 'NORMAL';
+    const rand = Math.random();
+    if (rand < 0.1) type = 'ELITE';
+    else if (rand < 0.3) type = 'FAST';
+    else if (rand < 0.5) type = 'TANK';
+    
+    const typeConfig = CONFIG.ENEMIES.TYPES[type];
+    
+    // Calculate stats with wave scaling
+    const health = CONFIG.ENEMIES.BASE_HEALTH + state.wave * CONFIG.ENEMIES.WAVE_SCALING.HEALTH;
+    const speed = CONFIG.ENEMIES.BASE_SPEED + state.wave * CONFIG.ENEMIES.WAVE_SCALING.SPEED;
+    const damage = CONFIG.ENEMIES.BASE_DAMAGE + state.wave * CONFIG.ENEMIES.WAVE_SCALING.DAMAGE;
+    
+    // Apply type modifiers
+    const modifiedHealth = health * (typeConfig.HEALTH || 1);
+    const modifiedSpeed = speed * (typeConfig.SPEED || 1);
+    const modifiedSize = CONFIG.ENEMIES.BASE_SIZE * (typeConfig.SIZE || 1);
+    
+    // Create enemy
+    const enemy = {
+        x, y,
+        size: modifiedSize,
+        speed: modifiedSpeed,
+        maxSpeed: modifiedSpeed,
+        health: modifiedHealth,
+        maxHealth: modifiedHealth,
+        damage: damage * (type === 'ELITE' ? CONFIG.ENEMIES.ELITE_MULTIPLIER.DAMAGE : 1),
+        color: typeConfig.COLOR.replace('$H', Math.random() * 360),
+        type,
+        value: typeConfig.VALUE,
+        trail: []
+    };
+    
+    state.enemies.push(enemy);
+    state.enemiesInWave++;
+}
+
+function spawnBoss() {
+    const health = CONFIG.BOSS.BASE_HEALTH + state.wave * CONFIG.BOSS.WAVE_SCALING.HEALTH;
+    state.boss = {
+        x: state.canvas.width / 2,
+        y: -100,
+        size: CONFIG.BOSS.BASE_SIZE,
+        speed: CONFIG.BOSS.BASE_SPEED + state.wave * CONFIG.BOSS.WAVE_SCALING.SPEED,
+        health: health,
+        maxHealth: health,
+        damage: CONFIG.BOSS.BASE_DAMAGE + state.wave * CONFIG.BOSS.WAVE_SCALING.DAMAGE,
+        color: 'red',
+        attackCooldown: 0,
+        attackPattern: 0,
+        moveTarget: { 
+            x: state.canvas.width / 2, 
+            y: state.canvas.height / 3 
+        },
+        phase: 0,
+        invulnerable: false,
+        summonTimer: 0,
+        effectTimer: 0,
+        trail: []
+    };
+    state.bossActive = true;
+    addScreenShake(10, 1);
+    
+    // Boss spawn effect
+    for (let i = 0; i < 100; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const dist = Math.random() * 200;
+        state.particles.push({
+            x: state.boss.x + Math.cos(angle) * dist,
+            y: state.boss.y + Math.sin(angle) * dist,
+            dx: (state.boss.x - (state.boss.x + Math.cos(angle) * dist)) * 0.1,
+            dy: (state.boss.y - (state.boss.y + Math.sin(angle) * dist)) * 0.1,
+            size: Math.random() * 5 + 3,
+            color: 'red',
+            lifetime: 1 + Math.random()
+        });
+    }
+}
+
+function spawnPowerup(type) {
+    const types = type ? [type] : ['health', 'armor', 'coin', 'time', 'rage'];
+    const selectedType = type || types[Math.floor(Math.random() * types.length)];
+    const config = CONFIG.POWERUPS[selectedType.toUpperCase()];
+    
+    // Fix NaN coins by ensuring value is a number
+    let value = Number(config.VALUE) || 0;
+    if (selectedType === 'coin') {
+        value += Math.floor(state.wave / 2);
+    }
+    
+    state.powerups.push({
+        x: Math.random() * (state.canvas.width - 100) + 50,
+        y: Math.random() * (state.canvas.height - 100) + 50,
+        type: selectedType,
+        size: config.SIZE,
+        value: value,
+        timer: config.LIFETIME,
+        color: config.COLOR,
+        rotation: 0,
+        rotationSpeed: (Math.random() - 0.5) * 0.1
+    });
+}
+
+// =============================================
+// UPDATE FUNCTIONS
+// =============================================
+function updatePlayer() {
+    // Update invulnerability timer
+    if (state.player.invulnerable > 0) {
+        state.player.invulnerable -= state.deltaTime;
+    }
+    
+    // Calculate movement speed
+    const moveSpeed = state.player.dash.active ? 
+        CONFIG.PLAYER.DASH_SPEED : 
+        CONFIG.PLAYER.BASE_SPEED;
+    
+    let velX = 0, velY = 0;
+    
+    // WASD movement
+    if (state.player.keys[state.controls.MOVE_LEFT]) velX -= moveSpeed;
+    if (state.player.keys[state.controls.MOVE_RIGHT]) velX += moveSpeed;
+    if (state.player.keys[state.controls.MOVE_UP]) velY -= moveSpeed;
+    if (state.player.keys[state.controls.MOVE_DOWN]) velY += moveSpeed;
+    
+    // Normalize diagonal movement
+    if (velX !== 0 && velY !== 0) {
+        const len = Math.sqrt(velX * velX + velY * velY);
+        velX = (velX / len) * moveSpeed;
+        velY = (velY / len) * moveSpeed;
+    }
+    
+    // Apply movement with deltaTime
+    state.player.x += velX * state.deltaTime;
+    state.player.y += velY * state.deltaTime;
+    
+    // Update background offset based on player movement
+    state.background.offsetX -= velX * state.deltaTime * 0.1;
+    state.background.offsetY -= velY * state.deltaTime * 0.1;
+    
+    // Keep in bounds
+    state.player.x = Math.max(state.player.radius, 
+        Math.min(state.canvas.width - state.player.radius, state.player.x));
+    state.player.y = Math.max(state.player.radius, 
+        Math.min(state.canvas.height - state.player.radius, state.player.y));
+    
+    // Update dash
+    if (state.player.dash.active) {
+        state.player.dash.duration -= state.deltaTime;
+        if (state.player.dash.duration <= 0) {
+            state.player.dash.active = false;
+            state.player.dash.cooldown = CONFIG.PLAYER.DASH_COOLDOWN;
+        }
+    } else if (state.player.dash.cooldown > 0) {
+        state.player.dash.cooldown -= state.deltaTime;
+    }
+    
+    // Update player effects
+    for (let i = state.player.effects.length - 1; i >= 0; i--) {
+        const effect = state.player.effects[i];
+        effect.timer -= state.deltaTime;
+        if (effect.timer <= 0) {
+            state.player.effects.splice(i, 1);
+        }
+    }
+}
+
+function updateWeapons() {
+    // Shield
+    if (state.weapons.shield.active) {
+        state.weapons.shield.cooldown -= state.deltaTime;
+        if (state.weapons.shield.cooldown <= 0) {
+            state.weapons.shield.active = false;
+            state.weapons.shield.cooldown = state.weapons.shield.maxCooldown;
+        }
+    } else if (state.weapons.shield.cooldown > 0) {
+        state.weapons.shield.cooldown -= state.deltaTime;
+    }
+    
+    // Gun
+    if (state.player.mouse.left && state.weapons.gun.cooldown <= 0) {
+        const angle = Math.atan2(state.player.mouseY - state.player.y, state.player.mouseX - state.player.x);
+        state.weapons.gun.bullets.push({
+            x: state.player.x,
+            y: state.player.y,
+            dx: Math.cos(angle) * CONFIG.WEAPONS.GUN.BULLET_SPEED * state.deltaTime,
+            dy: Math.sin(angle) * CONFIG.WEAPONS.GUN.BULLET_SPEED * state.deltaTime,
+            damage: state.weapons.gun.damage,
+            lifetime: 1.5 // seconds
+        });
+        state.weapons.gun.cooldown = state.weapons.gun.fireRate;
+        
+        // Muzzle flash
+        state.particles.push({
+            x: state.player.x + Math.cos(angle) * 20,
+            y: state.player.y + Math.sin(angle) * 20,
+            dx: Math.cos(angle) * 50 * state.deltaTime,
+            dy: Math.sin(angle) * 50 * state.deltaTime,
+            size: 5,
+            color: 'yellow',
+            lifetime: 0.1
+        });
+    }
+    if (state.weapons.gun.cooldown > 0) {
+        state.weapons.gun.cooldown -= state.deltaTime;
+    }
+    
+    // Sword
+    if (state.weapons.sword.active) {
+        state.weapons.sword.cooldown -= state.deltaTime;
+        if (state.weapons.sword.cooldown <= state.weapons.sword.maxCooldown - state.weapons.sword.swingDuration) {
+            state.weapons.sword.active = false;
+        }
+    } else if (state.weapons.sword.cooldown > 0) {
+        state.weapons.sword.cooldown -= state.deltaTime;
+    }
+    
+    // Grenade launcher
+    if (state.weapons.grenade.cooldown > 0) {
+        state.weapons.grenade.cooldown -= state.deltaTime;
+    }
+    
+    // Laser
+    if (state.weapons.laser.active) {
+        state.weapons.laser.cooldown -= state.deltaTime;
+        if (state.weapons.laser.cooldown <= 0) {
+            state.weapons.laser.active = false;
+            state.weapons.laser.cooldown = state.weapons.laser.maxCooldown;
+        }
+    } else if (state.weapons.laser.cooldown > 0) {
+        state.weapons.laser.cooldown -= state.deltaTime;
+    }
+    
+    // Black hole
+    if (state.weapons.blackHole.cooldown > 0) {
+        state.weapons.blackHole.cooldown -= state.deltaTime;
+    }
+}
+
+function updateBoss() {
+    if (!state.boss) return;
+    
+    // Update boss trail
+    state.boss.trail.push({x: state.boss.x, y: state.boss.y});
+    if (state.boss.trail.length > 10) {
+        state.boss.trail.shift();
+    }
+    
+    // Check for phase transitions
+    const healthPercent = state.boss.health / state.boss.maxHealth;
+    for (const phase of CONFIG.BOSS.PHASES) {
+        if (healthPercent < phase.healthThreshold && state.boss.phase < phase.healthThreshold) {
+            state.boss.phase = phase.healthThreshold;
+            state.boss.speed *= phase.speedMultiplier;
+            state.boss.color = `hsl(${Math.random() * 60}, 100%, 50%)`;
+            state.boss.effectTimer = 1;
+            addScreenShake(15, 1);
+            
+            // Phase transition effect
+            for (let i = 0; i < 50; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                state.particles.push({
+                    x: state.boss.x,
+                    y: state.boss.y,
+                    dx: Math.cos(angle) * (5 + Math.random() * 10),
+                    dy: Math.sin(angle) * (5 + Math.random() * 10),
+                    size: 3 + Math.random() * 5,
+                    color: state.boss.color,
+                    lifetime: 1 + Math.random()
+                });
+            }
+        }
+    }
+    
+    // Update boss effect timer
+    if (state.boss.effectTimer > 0) {
+        state.boss.effectTimer -= state.deltaTime;
+    }
+    
+    // Move boss
+    const dx = state.boss.moveTarget.x - state.boss.x;
+    const dy = state.boss.moveTarget.y - state.boss.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    
+    if (distance > 5) {
+        state.boss.x += (dx / distance) * state.boss.speed * state.deltaTime;
+        state.boss.y += (dy / distance) * state.boss.speed * state.deltaTime;
+    } else {
+        state.boss.attackPattern = (state.boss.attackPattern + 1) % CONFIG.BOSS.ATTACK_PATTERNS.length;
+        state.boss.attackCooldown = 1;
+        state.boss.moveTarget = {
+            x: Math.random() * (state.canvas.width - 200) + 100,
+            y: Math.random() * (state.canvas.height / 2 - 100) + 50
+        };
+    }
+    
+    // Boss attacks
+    if (state.boss.attackCooldown <= 0) {
+        const pattern = CONFIG.BOSS.ATTACK_PATTERNS[state.boss.attackPattern];
+        const angleToPlayer = Math.atan2(state.player.y - state.boss.y, state.player.x - state.boss.x);
+        
+        if (pattern.type === 'single') {
+            // Single powerful shot
+            state.enemies.push({
+                x: state.boss.x,
+                y: state.boss.y,
+                size: pattern.size,
+                speed: pattern.speed,
+                health: 1,
+                damage: pattern.damage,
+                color: pattern.color,
+                dx: Math.cos(angleToPlayer) * pattern.speed * state.deltaTime,
+                dy: Math.sin(angleToPlayer) * pattern.speed * state.deltaTime,
+                type: 'PROJECTILE'
+            });
+            state.boss.attackCooldown = 1.5;
+        } 
+        else if (pattern.type === 'circle') {
+            // Circle of enemies
+            for (let i = 0; i < pattern.count; i++) {
+                const angle = (Math.PI * 2 / pattern.count) * i;
+                state.enemies.push({
+                    x: state.boss.x,
+                    y: state.boss.y,
+                    size: pattern.size,
+                    speed: pattern.speed,
+                    health: 10,
+                    damage: pattern.damage,
+                    color: pattern.color,
+                    dx: Math.cos(angle) * pattern.speed * state.deltaTime,
+                    dy: Math.sin(angle) * pattern.speed * state.deltaTime,
+                    type: 'PROJECTILE'
+                });
+            }
+            state.boss.attackCooldown = 2;
+        } 
+        else if (pattern.type === 'homing') {
+            // Homing enemies
+            for (let i = 0; i < pattern.count; i++) {
+                const angle = angleToPlayer + (Math.random() - 0.5) * Math.PI/4;
+                state.enemies.push({
+                    x: state.boss.x,
+                    y: state.boss.y,
+                    size: pattern.size,
+                    speed: pattern.speed + Math.random() * pattern.speed,
+                    health: 15,
+                    damage: pattern.damage,
+                    color: pattern.color,
+                    type: 'HOMING'
+                });
+            }
+            state.boss.attackCooldown = 2.5;
+        } 
+        else if (pattern.type === 'spiral') {
+            // Spiral attack
+            for (let i = 0; i < pattern.count; i++) {
+                const angle = angleToPlayer + (Math.PI * 2 / pattern.count) * i + state.gameTime * 0.5;
+                state.enemies.push({
+                    x: state.boss.x,
+                    y: state.boss.y,
+                    size: pattern.size,
+                    speed: pattern.speed,
+                    health: 10,
+                    damage: pattern.damage,
+                    color: pattern.color,
+                    dx: Math.cos(angle) * pattern.speed * state.deltaTime,
+                    dy: Math.sin(angle) * pattern.speed * state.deltaTime,
+                    type: 'PROJECTILE'
+                });
+            }
+            state.boss.attackCooldown = 3;
+        }
+    } else {
+        state.boss.attackCooldown -= state.deltaTime;
+    }
+    
+    // Summon minions
+    state.boss.summonTimer += state.deltaTime;
+    if (state.boss.summonTimer > 3) {
+        state.boss.summonTimer = 0;
+        for (let i = 0; i < 3; i++) {
+            spawnEnemy();
+        }
+    }
+    
+    // Check if boss is dead
+    if (state.boss.health <= 0) {
+        state.player.coins += 20 + state.wave * 2;
+        state.stats.coinsCollected += 20 + state.wave * 2;
+        state.bossActive = false;
+        
+        // Boss death effect
+        for (let i = 0; i < 100; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = 5 + Math.random() * 10;
+            state.particles.push({
+                x: state.boss.x,
+                y: state.boss.y,
+                dx: Math.cos(angle) * speed,
+                dy: Math.sin(angle) * speed,
+                size: 2 + Math.random() * 5,
+                color: state.boss.color,
+                lifetime: 1 + Math.random()
+            });
+        }
+        
+        // Spawn powerups
+        for (let i = 0; i < 5; i++) {
+            spawnPowerup(['health', 'armor', 'coin', 'time', 'rage'][Math.floor(Math.random() * 5)]);
+        }
+        
+        state.boss = null;
+    }
+}
+
+function updateEnemies() {
+    for (let i = state.enemies.length - 1; i >= 0; i--) {
+        const enemy = state.enemies[i];
+        
+        // Initialize trail if it doesn't exist
+        if (!enemy.trail) {
+            enemy.trail = [];
+        }
+        
+        // Update enemy trail (limit to 5 segments)
+        enemy.trail.push({x: enemy.x, y: enemy.y});
+        if (enemy.trail.length > 5) {
+            enemy.trail.shift();
+        }
+        
+        // Skip projectiles from collision checks
+        if (enemy.type === 'PROJECTILE') {
+            enemy.x += enemy.dx;
+            enemy.y += enemy.dy;
+            
+            // Remove if out of bounds
+            if (enemy.x < -100 || enemy.x > state.canvas.width + 100 || 
+                enemy.y < -100 || enemy.y > state.canvas.height + 100) {
+                state.enemies.splice(i, 1);
+            }
+            continue;
+        }
+        
+        // Move toward player (or follow different behavior based on type)
+        if (enemy.type === 'HOMING') {
+            const dx = state.player.x - enemy.x;
+            const dy = state.player.y - enemy.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance > 0) {
+                enemy.x += (dx / distance) * enemy.speed * state.deltaTime;
+                enemy.y += (dy / distance) * enemy.speed * state.deltaTime;
+            }
+        } else {
+            // Normal movement
+            const dx = state.player.x - enemy.x;
+            const dy = state.player.y - enemy.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance > 0) {
+                enemy.x += (dx / distance) * enemy.speed * state.deltaTime;
+                enemy.y += (dy / distance) * enemy.speed * state.deltaTime;
+            }
+        }
+        
+        // Check collision with player
+        const distToPlayer = Math.sqrt(
+            Math.pow(state.player.x - enemy.x, 2) + 
+            Math.pow(state.player.y - enemy.y, 2)
+        );
+        
+        if (distToPlayer < state.player.radius + enemy.size / 2 && 
+            state.player.invulnerable <= 0) {
+            if (!state.weapons.shield.active) {
+                const damage = Math.max(1, enemy.damage - state.player.armor);
+                state.player.health -= damage;
+                state.stats.damageTaken += damage;
+                state.player.invulnerable = CONFIG.PLAYER.INVULNERABILITY_DURATION;
+                addScreenShake(3, 0.2);
+                
+                // Hit effect
+                for (let j = 0; j < 10; j++) {
+                    state.particles.push({
+                        x: state.player.x,
+                        y: state.player.y,
+                        dx: (Math.random() - 0.5) * 100 * state.deltaTime,
+                        dy: (Math.random() - 0.5) * 100 * state.deltaTime,
+                        size: Math.random() * 3 + 2,
+                        color: 'red',
+                        lifetime: 0.3 + Math.random() * 0.2
+                    });
+                }
+            }
+            
+            // Remove enemy unless it's a special type
+            if (!['ELITE', 'FAST', 'TANK', 'HOMING'].includes(enemy.type)) {
+                state.enemies.splice(i, 1);
+            }
+            continue;
+        }
+        
+        // Sword attack
+        if (state.weapons.sword.active && 
+            state.weapons.sword.cooldown > (state.weapons.sword.maxCooldown - state.weapons.sword.swingDuration)) {
+            const angle = Math.atan2(state.player.y - enemy.y, state.player.x - enemy.x);
+            const swordAngle = Math.atan2(state.player.mouseY - state.player.y, state.player.mouseX - state.player.x);
+            const angleDiff = Math.abs(((angle - swordAngle + Math.PI) % (Math.PI * 2))) - Math.PI;
+            
+            const dist = Math.sqrt(
+                Math.pow(state.player.x - enemy.x, 2) + 
+                Math.pow(state.player.y - enemy.y, 2)
+            );
+            
+            if (dist < state.weapons.sword.radius + enemy.size / 2 && 
+                Math.abs(angleDiff) < state.weapons.sword.angle / 2) {
+                const damage = enemy.maxHealth * state.weapons.sword.damagePercent;
+                enemy.health -= damage;
+                state.stats.damageDealt += damage;
+                
+                // Hit effect
+                for (let j = 0; j < 5; j++) {
+                    state.particles.push({
+                        x: enemy.x,
+                        y: enemy.y,
+                        dx: (Math.random() - 0.5) * 50 * state.deltaTime,
+                        dy: (Math.random() - 0.5) * 50 * state.deltaTime,
+                        size: Math.random() * 2 + 1,
+                        color: enemy.color,
+                        lifetime: 0.2 + Math.random() * 0.1
+                    });
+                }
+            }
+        }
+        
+        // Laser attack
+        if (state.weapons.laser.active) {
+            const laserAngle = Math.atan2(state.player.mouseY - state.player.y, state.player.mouseX - state.player.x);
+            const enemyAngle = Math.atan2(enemy.y - state.player.y, enemy.x - state.player.x);
+            const angleDiff = Math.abs(((enemyAngle - laserAngle + Math.PI) % (Math.PI * 2))) - Math.PI;
+            
+            const dist = Math.sqrt(
+                Math.pow(state.player.x - enemy.x, 2) + 
+                Math.pow(state.player.y - enemy.y, 2)
+            );
+            
+            const laserWidthRad = state.weapons.laser.width / state.weapons.laser.length;
+            
+            if (dist < state.weapons.laser.length + enemy.size / 2 && 
+                Math.abs(angleDiff) < laserWidthRad) {
+                const damage = state.weapons.laser.damage * state.deltaTime;
+                enemy.health -= damage;
+                state.stats.damageDealt += damage;
+                
+                if (Math.random() < 0.1) {
+                    state.particles.push({
+                        x: enemy.x,
+                        y: enemy.y,
+                        dx: (Math.random() - 0.5) * 20 * state.deltaTime,
+                        dy: (Math.random() - 0.5) * 20 * state.deltaTime,
+                        size: Math.random() * 2 + 1,
+                        color: 'white',
+                        lifetime: 0.1
+                    });
+                }
+            }
+        }
+        
+        // Black hole effect
+        for (const hole of state.weapons.blackHole.holes) {
+            if (hole.active) {
+                const dx = hole.x - enemy.x;
+                const dy = hole.y - enemy.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                if (dist < hole.radius + enemy.size / 2) {
+                    // Pull enemy toward black hole
+                    const pullStrength = (1 - dist / hole.radius) * 200 * state.deltaTime;
+                    enemy.x += (dx / dist) * pullStrength;
+                    enemy.y += (dy / dist) * pullStrength;
+                    
+                    // Damage enemy
+                    const damage = hole.damage * state.deltaTime;
+                    enemy.health -= damage;
+                    state.stats.damageDealt += damage;
+                    
+                    // Visual effect
+                    if (Math.random() < 0.05) {
+                        state.particles.push({
+                            x: enemy.x,
+                            y: enemy.y,
+                            dx: (hole.x - enemy.x) * 0.1,
+                            dy: (hole.y - enemy.y) * 0.1,
+                            size: Math.random() * 2 + 1,
+                            color: 'purple',
+                            lifetime: 0.3
+                        });
+                    }
+                }
+            }
+        }
+        
+        // Check if enemy is dead
+        if (enemy.health <= 0) {
+            // Drop coins
+            if (Math.random() < 0.3) {
+                state.player.coins += enemy.value;
+                state.stats.coinsCollected += enemy.value;
+            }
+            
+            state.stats.enemiesKilled++;
+            
+            // Death effect
+            for (let j = 0; j < 15; j++) {
+                state.particles.push({
+                    x: enemy.x,
+                    y: enemy.y,
+                    dx: (Math.random() - 0.5) * 100 * state.deltaTime,
+                    dy: (Math.random() - 0.5) * 100 * state.deltaTime,
+                    size: Math.random() * 3 + 2,
+                    color: enemy.color,
+                    lifetime: 0.3 + Math.random() * 0.2
+                });
+            }
+            
+            // Chance to drop powerup
+            if (Math.random() < 0.1) {
+                spawnPowerup();
+            }
+            
+            state.enemies.splice(i, 1);
+        }
+    }
+}
+
+function updateProjectiles() {
+    // Update gun bullets
+    for (let i = state.weapons.gun.bullets.length - 1; i >= 0; i--) {
+        const bullet = state.weapons.gun.bullets[i];
+        
+        bullet.x += bullet.dx;
+        bullet.y += bullet.dy;
+        bullet.lifetime -= state.deltaTime;
+        
+        // Remove if expired or out of bounds
+        if (bullet.x < -50 || bullet.x > state.canvas.width + 50 || 
+            bullet.y < -50 || bullet.y > state.canvas.height + 50 || 
+            bullet.lifetime <= 0) {
+            state.weapons.gun.bullets.splice(i, 1);
+            continue;
+        }
+        
+        // Check collision with enemies
+        for (let j = state.enemies.length - 1; j >= 0; j--) {
+            const enemy = state.enemies[j];
+            const dist = Math.sqrt(
+                Math.pow(bullet.x - enemy.x, 2) + 
+                Math.pow(bullet.y - enemy.y, 2)
+            );
+            
+            if (dist < enemy.size / 2) {
+                enemy.health -= bullet.damage;
+                state.stats.damageDealt += bullet.damage;
+                state.weapons.gun.bullets.splice(i, 1);
+                
+                // Hit effect
+                for (let k = 0; k < 3; k++) {
+                    state.particles.push({
+                        x: bullet.x,
+                        y: bullet.y,
+                        dx: (Math.random() - 0.5) * 30 * state.deltaTime,
+                        dy: (Math.random() - 0.5) * 30 * state.deltaTime,
+                        size: Math.random() * 2 + 1,
+                        color: enemy.color,
+                        lifetime: 0.2
+                    });
+                }
+                break;
+            }
+        }
+        
+        // Check collision with boss
+        if (state.boss) {
+            const dist = Math.sqrt(
+                Math.pow(bullet.x - state.boss.x, 2) + 
+                Math.pow(bullet.y - state.boss.y, 2)
+            );
+            
+            if (dist < state.boss.size / 2) {
+                state.boss.health -= bullet.damage;
+                state.stats.damageDealt += bullet.damage;
+                state.weapons.gun.bullets.splice(i, 1);
+                
+                // Hit effect
+                for (let k = 0; k < 5; k++) {
+                    state.particles.push({
+                        x: bullet.x,
+                        y: bullet.y,
+                        dx: (Math.random() - 0.5) * 30 * state.deltaTime,
+                        dy: (Math.random() - 0.5) * 30 * state.deltaTime,
+                        size: Math.random() * 3 + 2,
+                        color: state.boss.color,
+                        lifetime: 0.2
+                    });
+                }
+            }
+        }
+    }
+    
+    // Update grenades
+    for (let i = state.weapons.grenade.grenades.length - 1; i >= 0; i--) {
+        const grenade = state.weapons.grenade.grenades[i];
+        
+        if (!grenade.exploded) {
+            grenade.x += grenade.dx;
+            grenade.y += grenade.dy;
+            grenade.timer -= state.deltaTime;
+            
+            // Bounce off walls with reduced velocity
+            if (grenade.x < 0 || grenade.x > state.canvas.width) {
+                grenade.dx *= -0.7;
+                grenade.x = Math.max(0, Math.min(state.canvas.width, grenade.x));
+            }
+            if (grenade.y < 0 || grenade.y > state.canvas.height) {
+                grenade.dy *= -0.7;
+                grenade.y = Math.max(0, Math.min(state.canvas.height, grenade.y));
+            }
+            
+            // Explode when timer runs out or hits enemy
+            if (grenade.timer <= 0) {
+                grenade.exploded = true;
+                createExplosion(grenade.x, grenade.y, grenade.radius, grenade.damage);
+                state.weapons.grenade.grenades.splice(i, 1);
+            } else {
+                // Check if hit enemy
+                for (const enemy of state.enemies) {
+                    const dist = Math.sqrt(
+                        Math.pow(grenade.x - enemy.x, 2) + 
+                        Math.pow(grenade.y - enemy.y, 2)
+                    );
+                    
+                    if (dist < enemy.size / 2) {
+                        grenade.exploded = true;
+                        createExplosion(grenade.x, grenade.y, grenade.radius, grenade.damage);
+                        state.weapons.grenade.grenades.splice(i, 1);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    
+    // Update black holes
+    for (let i = state.weapons.blackHole.holes.length - 1; i >= 0; i--) {
+        const hole = state.weapons.blackHole.holes[i];
+        hole.timer -= state.deltaTime;
+        
+        if (hole.timer <= 0) {
+            // Black hole collapse effect
+            createImplosion(hole.x, hole.y, hole.radius);
+            state.weapons.blackHole.holes.splice(i, 1);
+        }
+    }
+}
+
+function createExplosion(x, y, radius, damage) {
+    // Damage enemies in radius
+    for (const enemy of state.enemies) {
+        const dist = Math.sqrt(
+            Math.pow(x - enemy.x, 2) + 
+            Math.pow(y - enemy.y, 2)
+        );
+        
+        if (dist < radius + enemy.size / 2) {
+            const damagePercent = 1 - Math.min(1, dist / radius);
+            const actualDamage = damage * damagePercent;
+            enemy.health -= actualDamage;
+            state.stats.damageDealt += actualDamage;
+        }
+    }
+    
+    // Damage boss
+    if (state.boss) {
+        const dist = Math.sqrt(
+            Math.pow(x - state.boss.x, 2) + 
+            Math.pow(y - state.boss.y, 2)
+        );
+        
+        if (dist < radius + state.boss.size / 2) {
+            const damagePercent = 1 - Math.min(1, dist / radius);
+            const actualDamage = damage * damagePercent;
+            state.boss.health -= actualDamage;
+            state.stats.damageDealt += actualDamage;
+        }
+    }
+    
+    // Create explosion particles
+    addScreenShake(8, 0.3);
+    for (let i = 0; i < 50; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 50 + Math.random() * 100;
+        const size = Math.random() * 5 + 2;
+        
+        state.particles.push({
+            x: x,
+            y: y,
+            dx: Math.cos(angle) * speed * state.deltaTime,
+            dy: Math.sin(angle) * speed * state.deltaTime,
+            size: size,
+            color: `hsl(${20 + Math.random() * 20}, 100%, 50%)`,
+            lifetime: 0.5 + Math.random() * 0.5
+        });
+    }
+}
+
+function createImplosion(x, y, radius) {
+    // Create implosion effect
+    for (let i = 0; i < 30; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const dist = Math.random() * radius;
+        
+        state.particles.push({
+            x: x + Math.cos(angle) * dist,
+            y: y + Math.sin(angle) * dist,
+            dx: (x - (x + Math.cos(angle) * dist)) * 0.2,
+            dy: (y - (y + Math.sin(angle) * dist)) * 0.2,
+            size: 3 + Math.random() * 4,
+            color: 'rgba(150, 0, 200, 0.8)',
+            lifetime: 0.3 + Math.random() * 0.3
+        });
+    }
+}
+
+function updateParticles() {
+    for (let i = state.particles.length - 1; i >= 0; i--) {
+        const p = state.particles[i];
+        p.x += p.dx;
+        p.y += p.dy;
+        p.lifetime -= state.deltaTime;
+        
+        if (p.lifetime <= 0) {
+            state.particles.splice(i, 1);
+        }
+    }
+}
+
+function updatePowerups() {
+    for (let i = state.powerups.length - 1; i >= 0; i--) {
+        const p = state.powerups[i];
+        p.timer -= state.deltaTime;
+        p.rotation += state.deltaTime * 2;
+        
+        // Check collision with player
+        const dist = Math.sqrt(
+            Math.pow(state.player.x - p.x, 2) + 
+            Math.pow(state.player.y - p.y, 2)
+        );
+        
+        if (dist < state.player.radius + p.size) {
+            // Apply powerup effect
+            if (p.type === 'health') {
+                state.player.health = Math.min(state.player.health + p.value, state.player.maxHealth);
+            } else if (p.type === 'armor') {
+                state.player.armor += p.value;
+            } else if (p.type === 'coin') {
+                state.player.coins += p.value;
+                state.stats.coinsCollected += p.value;
+            } else if (p.type === 'time') {
+                state.timeSlow.level += p.value;
+            } else if (p.type === 'rage') {
+                // Rage mode - temporary damage boost
+                state.player.effects.push({
+                    type: 'rage',
+                    duration: p.value,
+                    timer: p.value,
+                    damageMultiplier: 2
+                });
+            }
+            
+            // Collection effect
+            for (let j = 0; j < 15; j++) {
+                const angle = Math.random() * Math.PI * 2;
+                state.particles.push({
+                    x: p.x,
+                    y: p.y,
+                    dx: Math.cos(angle) * 50 * state.deltaTime,
+                    dy: Math.sin(angle) * 50 * state.deltaTime,
+                    size: Math.random() * 3 + 1,
+                    color: p.color,
+                    lifetime: 0.3 + Math.random() * 0.2
+                });
+            }
+            
+            state.powerups.splice(i, 1);
+        } else if (p.timer <= 0) {
+            // Fade out effect
+            if (p.timer > -0.5) {
+                p.color = p.color.replace('0.7', (0.7 * (p.timer + 0.5) / 0.5).toFixed(2));
+            } else {
+                state.powerups.splice(i, 1);
+            }
+        }
+    }
+}
+
+function updateEnvironmental() {
+    for (let i = state.environmental.length - 1; i >= 0; i--) {
+        const env = state.environmental[i];
+        
+        if (env.type === 'car') {
+            // Move car
+            env.x += env.speed * env.direction * state.deltaTime;
+            
+            // Wrap around screen
+            if (env.direction > 0 && env.x > state.canvas.width + 100) {
+                env.x = -100;
+            } else if (env.direction < 0 && env.x < -100) {
+                env.x = state.canvas.width + 100;
+            }
+            
+            // Check collision with player
+            const dist = Math.sqrt(
+                Math.pow(state.player.x - env.x, 2) + 
+                Math.pow(state.player.y - env.y, 2)
+            );
+            
+            if (dist < state.player.radius + Math.max(env.width, env.height) / 2 && 
+                state.player.invulnerable <= 0) {
+                const damage = Math.max(1, env.damage - state.player.armor);
+                state.player.health -= damage;
+                state.stats.damageTaken += damage;
+                state.player.invulnerable = CONFIG.PLAYER.INVULNERABILITY_DURATION;
+                addScreenShake(5, 0.3);
+                
+                // Hit effect
+                for (let j = 0; j < 15; j++) {
+                    state.particles.push({
+                        x: state.player.x,
+                        y: state.player.y,
+                        dx: (Math.random() - 0.5) * 100 * state.deltaTime,
+                        dy: (Math.random() - 0.5) * 100 * state.deltaTime,
+                        size: Math.random() * 3 + 2,
+                        color: 'red',
+                        lifetime: 0.3 + Math.random() * 0.2
+                    });
+                }
+            }
+        } 
+        else if (env.type === 'lava_bubble') {
+            // Move bubble
+            env.x += env.speedX * state.deltaTime;
+            env.y += env.speedY * state.deltaTime;
+            env.lifetime -= state.deltaTime;
+            
+            // Check if popped
+            if (env.lifetime <= 0) {
+                // Pop effect
+                for (let j = 0; j < 10; j++) {
+                    state.particles.push({
+                        x: env.x,
+                        y: env.y,
+                        dx: (Math.random() - 0.5) * 50 * state.deltaTime,
+                        dy: (Math.random() - 0.5) * 50 * state.deltaTime,
+                        size: Math.random() * 3 + 2,
+                        color: env.color,
+                        lifetime: 0.3 + Math.random() * 0.2
+                    });
+                }
+                
+                // Respawn at bottom
+                env.x = Math.random() * state.canvas.width;
+                env.y = state.canvas.height + 20;
+                env.lifetime = 2 + Math.random() * 3;
+            }
+            
+            // Check collision with player
+            const dist = Math.sqrt(
+                Math.pow(state.player.x - env.x, 2) + 
+                Math.pow(state.player.y - env.y, 2)
+            );
+            
+            if (dist < state.player.radius + env.radius && 
+                state.player.invulnerable <= 0) {
+                const damage = Math.max(1, env.damage - state.player.armor);
+                state.player.health -= damage;
+                state.stats.damageTaken += damage;
+                state.player.invulnerable = CONFIG.PLAYER.INVULNERABILITY_DURATION;
+                addScreenShake(3, 0.2);
+                
+                // Hit effect
+                for (let j = 0; j < 10; j++) {
+                    state.particles.push({
+                        x: state.player.x,
+                        y: state.player.y,
+                        dx: (Math.random() - 0.5) * 50 * state.deltaTime,
+                        dy: (Math.random() - 0.5) * 50 * state.deltaTime,
+                        size: Math.random() * 2 + 1,
+                        color: 'red',
+                        lifetime: 0.2 + Math.random() * 0.1
+                    });
+                }
+            }
+        }
+        else if (env.type === 'falling_rock') {
+            // Move rock
+            env.y += env.speed * state.deltaTime;
+            
+            // Respawn at top if out of bounds
+            if (env.y > state.canvas.height + 50) {
+                env.x = Math.random() * state.canvas.width;
+                env.y = -50;
+            }
+            
+            // Check collision with player
+            const dist = Math.sqrt(
+                Math.pow(state.player.x - env.x, 2) + 
+                Math.pow(state.player.y - env.y, 2)
+            );
+            
+            if (dist < state.player.radius + env.radius && 
+                state.player.invulnerable <= 0) {
+                const damage = Math.max(1, env.damage - state.player.armor);
+                state.player.health -= damage;
+                state.stats.damageTaken += damage;
+                state.player.invulnerable = CONFIG.PLAYER.INVULNERABILITY_DURATION;
+                addScreenShake(5, 0.3);
+                
+                // Hit effect
+                for (let j = 0; j < 15; j++) {
+                    state.particles.push({
+                        x: state.player.x,
+                        y: state.player.y,
+                        dx: (Math.random() - 0.5) * 100 * state.deltaTime,
+                        dy: (Math.random() - 0.5) * 100 * state.deltaTime,
+                        size: Math.random() * 3 + 2,
+                        color: 'red',
+                        lifetime: 0.3 + Math.random() * 0.2
+                    });
+                }
+            }
+        }
+    }
+}
+
+function updateTimeSlow() {
+    if (state.timeSlow.active) {
+        state.timeSlow.duration -= state.deltaTime;
+        if (state.timeSlow.duration <= 0) {
+            state.timeSlow.active = false;
+            state.timeSlow.cooldown = CONFIG.TIME_SLOW.BASE_COOLDOWN + 
+                                     (state.timeSlow.level * CONFIG.TIME_SLOW.UPGRADE_SCALING.COOLDOWN);
+        }
+    } else if (state.timeSlow.cooldown > 0) {
+        state.timeSlow.cooldown -= state.deltaTime;
+    }
+}
+
+function updateScreenShake() {
+    if (state.screenShake.duration > 0) {
+        state.screenShake.amount *= CONFIG.GAME.SCREEN_SHAKE_DECAY;
+        state.screenShake.duration -= state.deltaTime;
+    } else {
+        state.screenShake.amount = 0;
+    }
+}
+
+function updateGameProgression() {
+    state.gameTime += state.deltaTime;
+    
+    if (!state.bossActive) {
+        if (state.enemies.length < Math.min(3 + Math.floor(state.wave / 2), CONFIG.GAME.MAX_ENEMIES)) {
+            if (state.enemiesInWave < CONFIG.GAME.WAVE_ENEMY_COUNT + state.wave * CONFIG.GAME.WAVE_SCALING) {
+                if (Math.random() < CONFIG.GAME.ENEMY_SPAWN_RATE * state.deltaTime * 60) {
+                    spawnEnemy();
+                    state.enemiesInWave++;
+                }
+            } else {
+                startNextWave();
+            }
+        }
+    } else {
+        updateBoss();
+    }
+    
+    // Random powerup spawn
+    if (Math.random() < CONFIG.GAME.POWERUP_SPAWN_RATE * state.deltaTime * 60) {
+        spawnPowerup();
+    }
+    
+    // Update environmental elements
+    updateEnvironmental();
+}
+
+function upgradeWeapon(weapon) {
+    let cost, w;
+    
+    if (weapon === 'time') {
+        w = state.timeSlow;
+        cost = w.level * 20;
+    } else {
+        w = state.weapons[weapon];
+        cost = w.level * 10;
+        
+        // Special case for unlocking weapons
+        if (w.level === 0 && (weapon === 'grenade' || weapon === 'laser' || weapon === 'blackHole')) {
+            cost = 20; // Initial unlock cost
+        }
+    }
+    
+    if (state.player.coins >= cost) {
+        state.player.coins -= cost;
+        w.level++;
+        
+        switch (weapon) {
+            case 'shield':
+                w.radius += CONFIG.WEAPONS.SHIELD.UPGRADE_SCALING.RADIUS;
+                w.duration += CONFIG.WEAPONS.SHIELD.UPGRADE_SCALING.DURATION;
+                w.maxCooldown = Math.max(2, w.maxCooldown + CONFIG.WEAPONS.SHIELD.UPGRADE_SCALING.COOLDOWN);
+                break;
+            case 'gun':
+                w.damage += CONFIG.WEAPONS.GUN.UPGRADE_SCALING.DAMAGE;
+                w.fireRate = Math.max(0.033, w.fireRate + CONFIG.WEAPONS.GUN.UPGRADE_SCALING.FIRE_RATE);
+                break;
+            case 'sword':
+                w.damagePercent += CONFIG.WEAPONS.SWORD.UPGRADE_SCALING.DAMAGE;
+                w.radius += CONFIG.WEAPONS.SWORD.UPGRADE_SCALING.RADIUS;
+                w.swingDuration = Math.min(0.5, w.swingDuration + 0.1);
+                w.maxCooldown = Math.max(0.5, w.maxCooldown + CONFIG.WEAPONS.SWORD.UPGRADE_SCALING.COOLDOWN);
+                break;
+            case 'grenade':
+                w.damage += CONFIG.WEAPONS.GRENADE.UPGRADE_SCALING.DAMAGE;
+                w.radius += CONFIG.WEAPONS.GRENADE.UPGRADE_SCALING.RADIUS;
+                w.maxCooldown = Math.max(1.5, w.maxCooldown + CONFIG.WEAPONS.GRENADE.UPGRADE_SCALING.COOLDOWN);
+                break;
+            case 'laser':
+                w.damage += CONFIG.WEAPONS.LASER.UPGRADE_SCALING.DAMAGE;
+                w.length += CONFIG.WEAPONS.LASER.UPGRADE_SCALING.LENGTH;
+                w.duration = Math.min(3, w.duration + CONFIG.WEAPONS.LASER.UPGRADE_SCALING.DURATION);
+                w.maxCooldown = Math.max(5, w.maxCooldown + CONFIG.WEAPONS.LASER.UPGRADE_SCALING.COOLDOWN);
+                break;
+            case 'blackHole':
+                w.damage += CONFIG.WEAPONS.BLACK_HOLE.UPGRADE_SCALING.DAMAGE;
+                w.radius += CONFIG.WEAPONS.BLACK_HOLE.UPGRADE_SCALING.RADIUS;
+                w.duration = Math.min(4, w.duration + CONFIG.WEAPONS.BLACK_HOLE.UPGRADE_SCALING.DURATION);
+                w.maxCooldown = Math.max(10, w.maxCooldown + CONFIG.WEAPONS.BLACK_HOLE.UPGRADE_SCALING.COOLDOWN);
+                break;
+            case 'time':
+                // Time slow upgrades are handled by level increases
+                break;
+        }
+        
+        // Upgrade effect
+        addScreenShake(3, 0.2);
+        state.player.effects.push({
+            type: 'upgrade',
+            duration: 0.5,
+            timer: 0.5
+        });
+    }
+}
+
+// =============================================
+// RENDERING FUNCTIONS
+// =============================================
+function render() {
+    // Clear canvas
+    state.ctx.fillStyle = '#000';
+    state.ctx.fillRect(0, 0, state.canvas.width, state.canvas.height);    
+    
+    // Draw background
+    renderBackground();
+    
+    // Apply screen shake offset
+    const shakeX = state.screenShake.amount > 0 ? 
+        (Math.random() - 0.5) * state.screenShake.amount * 2 : 0;
+    const shakeY = state.screenShake.amount > 0 ? 
+        (Math.random() - 0.5) * state.screenShake.amount * 2 : 0;
+    
+    state.ctx.save();
+    state.ctx.translate(shakeX, shakeY);
+    
+    // Draw particles
+    for (const p of state.particles) {
+        state.ctx.fillStyle = p.color;
+        state.ctx.beginPath();
+        state.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        state.ctx.fill();
+    }
+    
+    // Draw powerups
+    for (const p of state.powerups) {
+        state.ctx.save();
+        state.ctx.translate(p.x, p.y);
+        state.ctx.rotate(p.rotation);
+        p.rotation += p.rotationSpeed * state.deltaTime;
+        
+        if (p.type === 'health') {
+            state.ctx.fillStyle = p.color;
+            state.ctx.beginPath();
+            state.ctx.moveTo(0, -p.size);
+            state.ctx.lineTo(-p.size, p.size);
+            state.ctx.lineTo(p.size, p.size);
+            state.ctx.closePath();
+            state.ctx.fill();
+        } else if (p.type === 'armor') {
+            state.ctx.fillStyle = p.color;
+            state.ctx.beginPath();
+            state.ctx.arc(0, 0, p.size, 0, Math.PI * 2);
+            state.ctx.fill();
+            state.ctx.strokeStyle = 'white';
+            state.ctx.lineWidth = 2;
+            state.ctx.stroke();
+        } else if (p.type === 'coin') {
+            const gradient = state.ctx.createRadialGradient(0, 0, 0, 0, 0, p.size);
+            gradient.addColorStop(0, 'rgba(255, 215, 0, 0.9)');
+            gradient.addColorStop(0.7, 'rgba(255, 215, 0, 0.7)');
+            gradient.addColorStop(1, 'rgba(255, 215, 0, 0.3)');
+            
+            state.ctx.fillStyle = gradient;
+            state.ctx.beginPath();
+            state.ctx.arc(0, 0, p.size, 0, Math.PI * 2);
+            state.ctx.fill();
+            
+            // Coin details
+            state.ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+            state.ctx.lineWidth = 1;
+            state.ctx.beginPath();
+            state.ctx.arc(0, 0, p.size * 0.7, 0, Math.PI * 2);
+            state.ctx.stroke();
+            
+            state.ctx.beginPath();
+            state.ctx.arc(0, 0, p.size * 0.3, 0, Math.PI * 2);
+            state.ctx.stroke();
+        } else if (p.type === 'time') {
+            state.ctx.fillStyle = p.color;
+            state.ctx.beginPath();
+            state.ctx.arc(0, 0, p.size, 0, Math.PI * 2);
+            state.ctx.fill();
+            state.ctx.fillStyle = 'white';
+            state.ctx.font = 'bold 12px Arial';
+            state.ctx.textAlign = 'center';
+            state.ctx.textBaseline = 'middle';
+            state.ctx.fillText('⌛', 0, 0);
+        } else if (p.type === 'rage') {
+            state.ctx.fillStyle = p.color;
+            state.ctx.beginPath();
+            state.ctx.arc(0, 0, p.size, 0, Math.PI * 2);
+            state.ctx.fill();
+            state.ctx.fillStyle = 'white';
+            state.ctx.font = 'bold 12px Arial';
+            state.ctx.textAlign = 'center';
+            state.ctx.textBaseline = 'middle';
+            state.ctx.fillText('⚡', 0, 0);
+        }
+        
+        state.ctx.restore();
+    }
+    
+    // Draw bullets
+    state.ctx.fillStyle = state.weapons.gun.color;
+    for (let i = state.weapons.gun.bullets.length - 1; i >= 0; i--) {
+        const b = state.weapons.gun.bullets[i];
+        // Only draw bullets that are still active
+        if (b.lifetime > 0) {
+            state.ctx.beginPath();
+            state.ctx.arc(b.x, b.y, 3, 0, Math.PI * 2);
+            state.ctx.fill();
+        }
+    }
+    
+    // Draw grenades
+    for (const g of state.weapons.grenade.grenades) {
+        if (!g.exploded) {
+            state.ctx.fillStyle = state.weapons.grenade.color;
+            state.ctx.beginPath();
+            state.ctx.arc(g.x, g.y, 5, 0, Math.PI * 2);
+            state.ctx.fill();
+        }
+    }
+    
+    // Draw black holes
+    for (const h of state.weapons.blackHole.holes) {
+        if (h.active) {
+            // Outer glow
+            const gradient = state.ctx.createRadialGradient(
+                h.x, h.y, h.radius * 0.3,
+                h.x, h.y, h.radius
+            );
+            gradient.addColorStop(0, 'rgba(150, 0, 200, 0.8)');
+            gradient.addColorStop(1, 'rgba(150, 0, 200, 0.1)');
+            
+            state.ctx.fillStyle = gradient;
+            state.ctx.beginPath();
+            state.ctx.arc(h.x, h.y, h.radius, 0, Math.PI * 2);
+            state.ctx.fill();
+            
+            // Inner core
+            state.ctx.fillStyle = 'rgba(50, 0, 80, 0.9)';
+            state.ctx.beginPath();
+            state.ctx.arc(h.x, h.y, h.radius * 0.3, 0, Math.PI * 2);
+            state.ctx.fill();
+        }
+    }
+    
+    // Draw enemies
+    for (const enemy of state.enemies) {
+        // Draw trail if it exists
+        if (enemy.trail && enemy.trail.length > 1) {
+            state.ctx.strokeStyle = enemy.color.replace(')', ', 0.3)');
+            state.ctx.lineWidth = enemy.size / 4;
+            state.ctx.beginPath();
+            state.ctx.moveTo(enemy.trail[0].x, enemy.trail[0].y);
+            
+            for (let i = 1; i < enemy.trail.length; i++) {
+                state.ctx.lineTo(enemy.trail[i].x, enemy.trail[i].y);
+            }
+            
+            state.ctx.stroke();
+        }
+        
+        state.ctx.save();
+        state.ctx.translate(enemy.x, enemy.y);
+        
+        // Face toward player
+        const angle = Math.atan2(state.player.y - enemy.y, state.player.x - enemy.x);
+        state.ctx.rotate(angle);
+        
+        // Different shapes for different enemy types
+        if (enemy.type === 'PROJECTILE') {
+            // Simple projectile
+            state.ctx.fillStyle = enemy.color;
+            state.ctx.beginPath();
+            state.ctx.arc(0, 0, enemy.size / 2, 0, Math.PI * 2);
+            state.ctx.fill();
+        } else {
+            // Normal enemy (triangle)
+            state.ctx.fillStyle = enemy.color;
+            state.ctx.beginPath();
+            state.ctx.moveTo(enemy.size / 2, 0);
+            state.ctx.lineTo(-enemy.size / 3, -enemy.size / 3);
+            state.ctx.lineTo(-enemy.size / 3, enemy.size / 3);
+            state.ctx.closePath();
+            state.ctx.fill();
+            
+            // Elite enemies have additional markings
+            if (enemy.type === 'ELITE') {
+                state.ctx.strokeStyle = 'gold';
+                state.ctx.lineWidth = 2;
+                state.ctx.stroke();
+            }
+        }
+        
+        state.ctx.restore();
+        
+        // Health bar for enemies with less than full health
+        if (enemy.health < enemy.maxHealth) {
+            const healthPercent = enemy.health / enemy.maxHealth;
+            state.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            state.ctx.fillRect(
+                enemy.x - enemy.size / 2,
+                enemy.y - enemy.size / 2 - 8,
+                enemy.size,
+                4
+            );
+            state.ctx.fillStyle = healthPercent > 0.6 ? '#4CAF50' : 
+                                 healthPercent > 0.3 ? '#FFC107' : '#F44336';
+            state.ctx.fillRect(
+                enemy.x - enemy.size / 2,
+                enemy.y - enemy.size / 2 - 8,
+                enemy.size * healthPercent,
+                4
+            );
+        }
+    }
+    
+    // Draw boss
+    if (state.boss) {
+        // Draw boss trail
+        if (state.boss.trail.length > 1) {
+            state.ctx.strokeStyle = state.boss.color.replace(')', ', 0.3)');
+            state.ctx.lineWidth = state.boss.size / 4;
+            state.ctx.beginPath();
+            state.ctx.moveTo(state.boss.trail[0].x, state.boss.trail[0].y);
+            
+            for (let i = 1; i < state.boss.trail.length; i++) {
+                state.ctx.lineTo(state.boss.trail[i].x, state.boss.trail[i].y);
+            }
+            
+            state.ctx.stroke();
+        }
+        
+        state.ctx.save();
+        state.ctx.translate(state.boss.x, state.boss.y);
+        
+        // Face toward player
+        const angle = Math.atan2(state.player.y - state.boss.y, state.player.x - state.boss.x);
+        state.ctx.rotate(angle);
+        
+        // Boss body
+        state.ctx.fillStyle = state.boss.color;
+        state.ctx.beginPath();
+        
+        // More complex shape for boss
+        state.ctx.moveTo(state.boss.size / 2, 0);
+        state.ctx.lineTo(state.boss.size / 4, -state.boss.size / 3);
+        state.ctx.lineTo(-state.boss.size / 3, -state.boss.size / 4);
+        state.ctx.lineTo(-state.boss.size / 4, -state.boss.size / 3);
+        state.ctx.lineTo(0, -state.boss.size / 2);
+        state.ctx.lineTo(state.boss.size / 4, -state.boss.size / 3);
+        state.ctx.lineTo(state.boss.size / 3, -state.boss.size / 4);
+        state.ctx.lineTo(state.boss.size / 4, state.boss.size / 3);
+        state.ctx.lineTo(0, state.boss.size / 2);
+        state.ctx.lineTo(-state.boss.size / 4, state.boss.size / 3);
+        state.ctx.lineTo(-state.boss.size / 3, state.boss.size / 4);
+        state.ctx.lineTo(-state.boss.size / 4, state.boss.size / 3);
+        state.ctx.lineTo(state.boss.size / 4, state.boss.size / 3);
+        state.ctx.closePath();
+        state.ctx.fill();
+        
+        // Phase effect glow
+        if (state.boss.effectTimer > 0) {
+            const glowSize = state.boss.size * (1 + (1 - state.boss.effectTimer) * 0.5);
+            const gradient = state.ctx.createRadialGradient(
+                0, 0, state.boss.size * 0.5,
+                0, 0, glowSize
+            );
+            gradient.addColorStop(0, state.boss.color.replace(')', ', 0.8)'));
+            gradient.addColorStop(1, state.boss.color.replace(')', ', 0)'));
+            
+            state.ctx.fillStyle = gradient;
+            state.ctx.beginPath();
+            state.ctx.arc(0, 0, glowSize, 0, Math.PI * 2);
+            state.ctx.fill();
+        }
+        
+        state.ctx.restore();
+        
+        // Boss health bar
+        const healthPercent = state.boss.health / state.boss.maxHealth;
+        const barWidth = state.canvas.width / 2;
+        const barHeight = 20;
+        const barX = state.canvas.width / 4;
+        const barY = 20;
+        
+        // Background
+        state.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        state.ctx.fillRect(barX - 2, barY - 2, barWidth + 4, barHeight + 4);
+        
+        // Health
+        state.ctx.fillStyle = '#F44336';
+        state.ctx.fillRect(barX, barY, barWidth, barHeight);
+        state.ctx.fillStyle = healthPercent > 0.7 ? '#4CAF50' : 
+                             healthPercent > 0.4 ? '#FFC107' : '#F44336';
+        state.ctx.fillRect(barX, barY, barWidth * healthPercent, barHeight);
+        
+        // Border
+        state.ctx.strokeStyle = 'white';
+        state.ctx.lineWidth = 2;
+        state.ctx.strokeRect(barX - 2, barY - 2, barWidth + 4, barHeight + 4);
+        
+        // Text
+        state.ctx.fillStyle = 'white';
+        state.ctx.font = '16px Orbitron';
+        state.ctx.textAlign = 'center';
+        state.ctx.fillText(
+            `BOSS: ${Math.floor(state.boss.health)}/${state.boss.maxHealth} | Phase ${state.boss.phase > 0.4 ? 2 : state.boss.phase > 0.7 ? 1 : 1}`,
+            state.canvas.width / 2,
+            barY + barHeight / 2 + 5
+        );
+    }
+    
+    // Draw environmental elements
+    for (const env of state.environmental) {
+        if (env.type === 'car') {
+            state.ctx.fillStyle = env.color;
+            state.ctx.fillRect(env.x - env.width/2, env.y - env.height/2, env.width, env.height);
+            
+            // Windows
+            state.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            state.ctx.fillRect(env.x - env.width/3, env.y - env.height/3, env.width/3, env.height/3);
+            state.ctx.fillRect(env.x + env.width/6, env.y - env.height/3, env.width/3, env.height/3);
+        } 
+        else if (env.type === 'lava_bubble') {
+            state.ctx.fillStyle = env.color;
+            state.ctx.beginPath();
+            state.ctx.arc(env.x, env.y, env.radius, 0, Math.PI * 2);
+            state.ctx.fill();
+            
+            // Highlight
+            state.ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+            state.ctx.beginPath();
+            state.ctx.arc(env.x - env.radius/3, env.y - env.radius/3, env.radius/3, 0, Math.PI * 2);
+            state.ctx.fill();
+        }
+        else if (env.type === 'falling_rock') {
+            state.ctx.fillStyle = env.color;
+            state.ctx.beginPath();
+            state.ctx.arc(env.x, env.y, env.radius, 0, Math.PI * 2);
+            state.ctx.fill();
+            
+            // Crack lines
+            state.ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
+            state.ctx.lineWidth = 2;
+            state.ctx.beginPath();
+            state.ctx.moveTo(env.x - env.radius/2, env.y - env.radius/2);
+            state.ctx.lineTo(env.x + env.radius/3, env.y + env.radius/3);
+            state.ctx.moveTo(env.x + env.radius/4, env.y - env.radius/3);
+            state.ctx.lineTo(env.x - env.radius/3, env.y + env.radius/4);
+            state.ctx.stroke();
+        }
+    }
+    
+    // Draw player
+    state.ctx.save();
+    state.ctx.translate(state.player.x, state.player.y);
+    
+    // Face toward mouse
+    const angle = Math.atan2(state.player.mouseY - state.player.y, state.player.mouseX - state.player.x);
+    state.ctx.rotate(angle);
+    
+    // Player ship
+    state.ctx.fillStyle = state.player.invulnerable > 0 ? 
+        `rgba(255, 255, 255, ${0.5 + 0.5 * Math.sin(state.gameTime * 10)})` : 'white';
+    state.ctx.beginPath();
+    state.ctx.moveTo(state.player.radius, 0);
+    state.ctx.lineTo(-state.player.radius / 2, -state.player.radius / 2);
+    state.ctx.lineTo(-state.player.radius / 3, 0);
+    state.ctx.lineTo(-state.player.radius / 2, state.player.radius / 2);
+    state.ctx.closePath();
+    state.ctx.fill();
+    
+    // Engine glow when moving
+    if (state.player.keys[state.controls.MOVE_UP] || state.player.keys[state.controls.MOVE_DOWN] || 
+        state.player.keys[state.controls.MOVE_LEFT] || state.player.keys[state.controls.MOVE_RIGHT]) {
+        state.ctx.fillStyle = `rgba(255, 100, 0, ${0.7 + 0.3 * Math.sin(state.gameTime * 10)})`;
+        state.ctx.beginPath();
+        state.ctx.moveTo(-state.player.radius / 2, -state.player.radius / 4);
+        state.ctx.lineTo(-state.player.radius, 0);
+        state.ctx.lineTo(-state.player.radius / 2, state.player.radius / 4);
+        state.ctx.closePath();
+        state.ctx.fill();
+    }
+    
+    state.ctx.restore();
+    
+    // Draw shield if active
+    if (state.weapons.shield.active) {
+        state.ctx.strokeStyle = state.weapons.shield.color;
+        state.ctx.lineWidth = 3;
+        state.ctx.beginPath();
+        state.ctx.arc(
+            state.player.x,
+            state.player.y,
+            state.weapons.shield.radius,
+            0,
+            Math.PI * 2 * (1 - state.weapons.shield.cooldown / state.weapons.shield.duration)
+        );
+        state.ctx.stroke();
+    }
+    
+    // Draw sword if active
+    if (state.weapons.sword.active) {
+        const angle = Math.atan2(state.player.mouseY - state.player.y, state.player.mouseX - state.player.x);
+        
+        // Sword blade
+        state.ctx.strokeStyle = state.weapons.sword.color;
+        state.ctx.lineWidth = 5;
+        state.ctx.beginPath();
+        state.ctx.moveTo(state.player.x, state.player.y);
+        state.ctx.lineTo(
+            state.player.x + Math.cos(angle) * state.weapons.sword.radius,
+            state.player.y + Math.sin(angle) * state.weapons.sword.radius
+        );
+        state.ctx.stroke();
+        
+        // Sword arc
+        state.ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+        state.ctx.lineWidth = state.weapons.sword.radius;
+        state.ctx.beginPath();
+        state.ctx.arc(
+            state.player.x,
+            state.player.y,
+            state.weapons.sword.radius / 2,
+            angle - state.weapons.sword.angle / 2,
+            angle + state.weapons.sword.angle / 2
+        );
+        state.ctx.stroke();
+    }
+    
+    // Draw laser if active
+    if (state.weapons.laser.active) {
+        const angle = Math.atan2(state.player.mouseY - state.player.y, state.player.mouseX - state.player.x);
+        
+        // Laser beam
+        const gradient = state.ctx.createLinearGradient(
+            state.player.x,
+            state.player.y,
+            state.player.x + Math.cos(angle) * state.weapons.laser.length,
+            state.player.y + Math.sin(angle) * state.weapons.laser.length
+        );
+        gradient.addColorStop(0, state.weapons.laser.color.replace('0.7', '0.9'));
+        gradient.addColorStop(1, state.weapons.laser.color.replace('0.7', '0.3'));
+        
+        state.ctx.strokeStyle = gradient;
+        state.ctx.lineWidth = state.weapons.laser.width;
+        state.ctx.beginPath();
+        state.ctx.moveTo(state.player.x, state.player.y);
+        state.ctx.lineTo(
+            state.player.x + Math.cos(angle) * state.weapons.laser.length,
+            state.player.y + Math.sin(angle) * state.weapons.laser.length
+        );
+        state.ctx.stroke();
+        
+        // Muzzle flash
+        const flashSize = 15 + 5 * Math.sin(state.gameTime * 20);
+        const flashGradient = state.ctx.createRadialGradient(
+            state.player.x,
+            state.player.y,
+            0,
+            state.player.x,
+            state.player.y,
+            flashSize
+        );
+        flashGradient.addColorStop(0, 'rgba(255, 100, 100, 0.9)');
+        flashGradient.addColorStop(1, 'rgba(255, 50, 50, 0)');
+        
+        state.ctx.fillStyle = flashGradient;
+        state.ctx.beginPath();
+        state.ctx.arc(
+            state.player.x,
+            state.player.y,
+            flashSize,
+            0,
+            Math.PI * 2
+        );
+        state.ctx.fill();
+    }
+    
+    // Time slow effect
+    if (state.timeSlow.active) {
+        state.ctx.fillStyle = 'rgba(100, 150, 255, 0.2)';
+        state.ctx.fillRect(0, 0, state.canvas.width, state.canvas.height);
+    }
+    
+    // Rage effect
+    const rageEffect = state.player.effects.find(e => e.type === 'rage');
+    if (rageEffect) {
+        const intensity = rageEffect.timer / rageEffect.duration;
+        state.ctx.fillStyle = `rgba(255, 50, 50, ${0.2 * intensity})`;
+        state.ctx.fillRect(0, 0, state.canvas.width, state.canvas.height);
+    }
+    
+    state.ctx.restore();
+    
+    // Draw UI
+    drawUI();
+    
+    // Draw game over or pause screens
+    if (state.player.health <= 0) {
+        drawGameOver();
+    } else if (state.gamePaused) {
+        drawPauseScreen();
+    }
+}
+
+function renderBackground() {
+    // Draw stars for space background
+    if (state.currentMap === 'space') {
+        state.ctx.fillStyle = '#000';
+        state.ctx.fillRect(0, 0, state.canvas.width, state.canvas.height);
+        
+        for (const star of state.background.stars) {
+            state.ctx.fillStyle = star.color;
+            state.ctx.beginPath();
+            state.ctx.arc(
+                (star.x + state.background.offsetX * star.speed) % state.canvas.width,
+                (star.y + state.background.offsetY * star.speed) % state.canvas.height,
+                star.size,
+                0,
+                Math.PI * 2
+            );
+            state.ctx.fill();
+        }
+        
+        // Draw nebulas
+        for (const layer of state.background.parallaxLayers) {
+            state.ctx.fillStyle = layer.color;
+            state.ctx.beginPath();
+            state.ctx.arc(
+                (layer.x + state.background.offsetX * layer.speed) % state.canvas.width,
+                (layer.y + state.background.offsetY * layer.speed) % state.canvas.height,
+                layer.size,
+                0,
+                Math.PI * 2
+            );
+            state.ctx.fill();
+        }
+    } 
+    // Draw city background
+    else if (state.currentMap === 'city') {
+        // Night sky gradient
+        const skyGradient = state.ctx.createLinearGradient(0, 0, 0, state.canvas.height);
+        skyGradient.addColorStop(0, '#0a0a1a');
+        skyGradient.addColorStop(1, '#1a1a3a');
+        
+        state.ctx.fillStyle = skyGradient;
+        state.ctx.fillRect(0, 0, state.canvas.width, state.canvas.height);
+        
+        // Draw distant buildings
+        for (const building of state.background.parallaxLayers) {
+            if (building.x !== undefined) {
+                state.ctx.fillStyle = building.color;
+                state.ctx.fillRect(
+                    (building.x + state.background.offsetX * building.speed) % (state.canvas.width + 200) - 100,
+                    building.y,
+                    building.width,
+                    building.height
+                );
+            }
+        }
+        
+        // Draw city silhouette
+        state.ctx.fillStyle = '#111';
+        state.ctx.fillRect(0, state.canvas.height - 100, state.canvas.width, 100);
+        
+        // Draw windows
+        state.ctx.fillStyle = 'rgba(255, 255, 150, 0.8)';
+        for (let i = 0; i < 50; i++) {
+            const x = Math.random() * state.canvas.width;
+            const y = state.canvas.height - 100 + Math.random() * 90;
+            const size = 2 + Math.random() * 3;
+            state.ctx.fillRect(x, y, size, size);
+        }
+    } 
+    // Draw lava background
+    else if (state.currentMap === 'lava') {
+        // Lava pit gradient
+        const lavaGradient = state.ctx.createLinearGradient(0, 0, 0, state.canvas.height);
+        lavaGradient.addColorStop(0, '#3a1a0a');
+        lavaGradient.addColorStop(0.7, '#5a2a1a');
+        lavaGradient.addColorStop(1, '#7a3a2a');
+        
+        state.ctx.fillStyle = lavaGradient;
+        state.ctx.fillRect(0, 0, state.canvas.width, state.canvas.height);
+        
+        // Draw rock formations
+        for (const rock of state.background.parallaxLayers) {
+            if (rock.x !== undefined) {
+                state.ctx.fillStyle = rock.color;
+                state.ctx.beginPath();
+                state.ctx.arc(
+                    (rock.x + state.background.offsetX * rock.speed) % (state.canvas.width + 200) - 100,
+                    rock.y,
+                    rock.width / 2,
+                    0,
+                    Math.PI * 2
+                );
+                state.ctx.fill();
+            }
+        }
+        
+        // Draw lava cracks
+        state.ctx.fillStyle = 'rgba(255, 100, 0, 0.5)';
+        state.ctx.fillRect(0, state.canvas.height - 20, state.canvas.width, 20);
+        
+        for (const crack of state.background.parallaxLayers) {
+            if (crack.width !== undefined && crack.y === state.canvas.height - 20) {
+                state.ctx.fillStyle = crack.color;
+                state.ctx.beginPath();
+                state.ctx.arc(
+                    (crack.x + state.background.offsetX * crack.speed) % (state.canvas.width + 200) - 100,
+                    crack.y,
+                    crack.width / 2,
+                    0,
+                    Math.PI
+                );
+                state.ctx.fill();
+            }
+        }
+    }
+}
+
+function drawUI() {
+    const ctx = state.ctx;
+
+    // Health bar
+    const healthPercent = state.player.health / state.player.maxHealth;
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.fillRect(20, 20, 204, 24);
+    ctx.fillStyle = healthPercent > 0.6 ? '#4CAF50' : 
+                   healthPercent > 0.3 ? '#FFC107' : '#F44336';
+    ctx.fillRect(22, 22, 200 * healthPercent, 20);
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(20, 20, 204, 24);
+
+    // Health text
+    ctx.fillStyle = 'white';
+    ctx.font = '16px Orbitron';
+    ctx.textAlign = 'left';
+    ctx.fillText(
+        `Health: ${Math.floor(state.player.health)}/${state.player.maxHealth}`,
+        30,
+        38
+    );
+
+    // Armor
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.fillRect(20, 50, 204, 24);
+    ctx.fillStyle = '#2196F3';
+    ctx.fillRect(22, 52, 200 * (state.player.armor / 100), 20);
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(20, 50, 204, 24);
+    ctx.fillStyle = 'white';
+    ctx.fillText(
+        `Armor: ${state.player.armor}`,
+        30,
+        68
+    );
+
+    // Coins
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.fillRect(20, 80, 204, 24);
+    ctx.fillStyle = '#FFD700';
+    ctx.fillRect(22, 82, 200, 20);
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(20, 80, 204, 24);
+    ctx.fillStyle = 'black';
+    ctx.fillText(
+        `Coins: ${state.player.coins}`,
+        30,
+        98
+    );
+
+    // Wave
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.fillRect(20, 110, 204, 24);
+    ctx.fillStyle = 'white';
+    ctx.fillRect(22, 112, 200, 20);
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(20, 110, 204, 24);
+    ctx.fillStyle = 'black';
+    ctx.fillText(
+        `Wave: ${state.wave}`,
+        30,
+        128
+    );
+}
+function drawPauseScreen() {
+    const ctx = state.ctx;
+    
+    // Semi-transparent overlay
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.fillRect(0, 0, state.canvas.width, state.canvas.height);
+    
+    // Pause text
+    ctx.fillStyle = 'white';
+    ctx.font = '72px "Press Start 2P"';
+    ctx.textAlign = 'center';
+    ctx.fillText(
+        'PAUSED',
+        state.canvas.width / 2,
+        state.canvas.height / 2
+    );
+    
+    // Instructions
+    ctx.font = '24px Orbitron';
+    ctx.fillText(
+        'Press ESC to resume',
+        state.canvas.width / 2,
+        state.canvas.height / 2 + 50
+    );
+}
+
+function drawGameOver() {
+    const ctx = state.ctx;
+    
+    // Semi-transparent overlay
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.fillRect(0, 0, state.canvas.width, state.canvas.height);
+    
+    // Pause text
+    ctx.fillStyle = 'white';
+    ctx.font = '72px "Press Start 2P"';
+    ctx.textAlign = 'center';
+    ctx.fillText(
+        'GAME OVER',
+        state.canvas.width / 2,
+        state.canvas.height / 2
+    );
+    
+    // Instructions
+    ctx.font = '24px Orbitron';
+    ctx.fillText(
+        'Press F5 to restart',
+        state.canvas.width / 2,
+        state.canvas.height / 2 + 50
+    );
+}
+
+// =============================================
+// MAIN GAME LOOP
+// =============================================
+function gameLoop(currentTime) {
+    // Calculate delta time in seconds
+    state.deltaTime = (currentTime - state.lastTime) / 1000;
+    state.lastTime = currentTime;
+    
+    // Cap delta time to prevent physics issues
+    state.deltaTime = Math.min(state.deltaTime, 0.1);
+    
+    // Apply time slow factor
+    const timeFactor = state.timeSlow.active ? CONFIG.TIME_SLOW.TIME_FACTOR : 1;
+    state.deltaTime *= timeFactor;
+    
+    if (!state.gamePaused && state.player.health > 0 && state.gameStarted) {
+        // Update game systems
+        updatePlayer();
+        updateWeapons();
+        updateProjectiles();
+        updateEnemies();
+        updateParticles();
+        updatePowerups();
+        updateTimeSlow();
+        updateScreenShake();
+        updateGameProgression();
+    }
+    
+    // Always render
+    render();
+    drawUI();
+    // Continue the game loop
+    requestAnimationFrame(gameLoop);
+}
+// Menu event listeners - fixed version
+document.addEventListener('DOMContentLoaded', function() {
+    // Start button
+    document.getElementById('startBtn').addEventListener('click', function() {
+        document.getElementById('map-selector').style.display = 'block';
+    });
+
+    // Instructions button
+    document.getElementById('instructionsBtn').addEventListener('click', function() {
+        const instructions = document.getElementById('instructions');
+        instructions.style.display = instructions.style.display === 'block' ? 'none' : 'block';
+    });
+
+    // Credits button
+    document.getElementById('creditsBtn').addEventListener('click', function() {
+        alert('Arena Shooter Ultimate\nCreated by [Your Name]\nInspired by classic arcade shooters');
+    });
+
+    // Map selection
+    document.querySelectorAll('.map-option').forEach(option => {
+        option.addEventListener('click', function() {
+            state.currentMap = this.dataset.map;
+            document.getElementById('menu').style.display = 'none';
+            document.getElementById('map-selector').style.display = 'none';
+            state.gameStarted = true;
+            initGame();
+        });
+    });
+});
+</script>
+</body>
+</html
